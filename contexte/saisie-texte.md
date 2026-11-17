@@ -53,11 +53,30 @@ un repère unique, réussite = repère renvoyé dans l'écho) :
 chiffré (protection Baidu) et la partie Flutter est absente — on ne
 contourne pas cette protection.
 
-## 4. Pistes restantes
+## 4. Ce que l'app officielle nous apprend (17/11, téléphone de l'utilisateur)
 
-1. **Vérifier si l'app VIDAA officielle du téléphone sait taper sur cette
-   TV.** Si non, la TV ne prend sans doute pas de texte à distance par ce
-   canal, et chercher davantage est inutile.
+- **L'app VIDAA du téléphone sait taper sur cette TV** : pendant les écoutes,
+  « Nightwish Ghost love score » avait été tapé avec le clavier du
+  téléphone. Le mécanisme existe donc ; seul le sujet/format d'envoi manque.
+- Paquet `com.universal.remote.multi`, version 1.09.06.003.1 (Redmi Note 12
+  Pro+, Android 12). Écrans dédiés : `U6InputActivity` (clavier),
+  `activity.remote.mouse.MouseActivity` (souris).
+- Lecture des fichiers de l'app (via `adb`, en lecture seule) :
+  - code Java/Kotlin **chiffré** (protection Baidu : `baiduprotect*.jar`,
+    `libbaiduprotect.so`) ;
+  - `libapp.so` (Flutter, lisible) : uniquement l'interface, aucun sujet
+    MQTT ; `libmqttcrypt.so` : les identifiants (déjà connus via pyvidaa).
+- Journal Android (`adb logcat`) pendant la saisie et la souris : les lignes
+  de l'app sont **chiffrées** (`I/g: 927492614V6ZYt9…`). Capture supprimée
+  après analyse (données personnelles du téléphone).
+- **Limite assumée** : ne pas casser ces protections (contournement de
+  mesures techniques, interdit même pour l'interopérabilité). L'interception
+  du trafic téléphone ↔ TV est elle aussi bloquée : TLS, et l'app embarque le
+  certificat racine de la TV (`remoteca.bks`), donc refuserait un faux serveur.
+
+## 5. Pistes restantes
+
+1. ~~Vérifier si l'app du téléphone sait taper~~ : oui (voir § 4).
 2. **Repli : taper via le clavier affiché par la TV** (flèches + OK). Pour
    les zones VIDAA, l'écho permet de vérifier chaque lettre (boucle fermée) ;
    pour YouTube (pas d'écho), il faut connaître la disposition de son
