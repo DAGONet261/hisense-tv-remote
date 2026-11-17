@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| _(aucune session en cours)_ | | | | |
+| Saisie de texte : analyse de l'app VIDAA | `saisie-texte-2` | `contexte/saisie-texte.md` | 2026-11-17 18:05 | Claude (session principale) |
