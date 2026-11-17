@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| Touche Reculer = KEY_BACKS | `touche-reculer` | `src/HisenseTvRemote.Core/Vidaa/VidaaProtocol.cs`, `src/HisenseTvRemote.Core/KeyCatalog.cs`, `src/HisenseTvRemote.Core/KeyboardShortcuts.cs`, `src/HisenseTvRemote/MainWindow.xaml`, `src/HisenseTvRemote.Tests/CoreTests.cs`, `src/HisenseTvRemote.Tests/VidaaNativeTests.cs`, `src/HisenseTvRemote.Tests/ShortcutTests.cs`, `contexte/capacites-tv.md` | 2026-11-17 21:00 | Claude (session principale) |
+| _(aucune session en cours)_ | | | | |

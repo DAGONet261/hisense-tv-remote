@@ -59,6 +59,12 @@ l'avancement (par toi, ou par Claude Code dans Visual Studio).
       publie l'app autonome et compile l'installeur Inno Setup 7 à la même
       version ; icône VIDAA ; nom « VIDAA - Hisense ». Certificat jamais
       embarqué. Voir `contexte/publication.md`
+- [x] **Rembobiner** (17/11) : `KEY_BACKS` (vérifié devant la TV, lecteur USB et
+      YouTube) ; `KEY_BACK` de pyvidaa ne fait rien
+- [ ] **Partager vers la TV (DLNA)** : photos, vidéos, musique du PC vers la
+      TV (lecteur DLNA vérifié le 17/11, photo affichée) ; serveur HTTP local,
+      règle de pare-feu, conversion HEIC, recul/avance par position. Voir
+      `contexte/capacites-tv.md`
 - [ ] Signature de code de l'exe et de l'installeur (évite l'avertissement
       SmartScreen) — nécessite un certificat de signature
 - [x] **Sources TV et HDMI** (17/11) : corrigé (identifiants textuels « HDMI1 »…

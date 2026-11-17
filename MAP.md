@@ -73,7 +73,7 @@ chercher ailleurs.
 | `interface.md` | Refonte de l'interface : organisation, règles de nommage des boutons, logos fournis par la TV, architecture MVVM. |
 | `base-sqlite.md` | Base SQLite portable : emplacement, tables, chiffrement DPAPI des jetons, import, repli. |
 | `portage-natif-csharp.md` | Moteur natif C# : correspondance avec pyvidaa, mesures, améliorations, points d'attention. |
-| `capacites-tv.md` | Ce que la TV déclare savoir faire (pas de capture d'écran, pilotage souris…), modèle exact, deux cartes réseau. |
+| `capacites-tv.md` | Ce que la TV déclare savoir faire (pas de capture d'écran, pilotage souris…), modèle exact, deux cartes réseau, touches de lecture vérifiées (Rembobiner = `KEY_BACKS`), lecteur DLNA (partage de photos/vidéos). |
 | `pont-python-persistant.md` | *Historique* : lenteur de `tv.exe` et pont Python persistant (retirés le 17/11). |
 | `pyvidaa-comportement-reel.md` | *Historique* : ce que faisait vraiment `tv.exe` sur la 55A53FXVT : fichiers dans le répertoire courant, bugs de pyvidaa 2.3.0, sorties réelles, collision MQTT, changement d'IP. |
 | `preferences-travail.md` | Comment l'utilisateur préfère qu'on travaille (style de réponses, choix techniques). |
