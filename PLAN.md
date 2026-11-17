@@ -54,9 +54,13 @@ l'avancement (par toi, ou par Claude Code dans Visual Studio).
 - [ ] Lire le certificat client directement dans le **magasin de certificats
       Windows** (l'utilisateur l'y a importé le 17/11) : plus aucun fichier de
       clé sur le disque ; garder l'import `.p12` comme alternative
-- [ ] Setup (installeur) et versionnage de l'application — certificat à
-      importer au premier lancement, jamais embarqué (voir
-      `contexte/certificat-client.md`)
+- [x] **Setup (installeur) et versionnage** (17/11) : `version.txt` (1.0.0.0),
+      une compilation Release dans Visual Studio incrémente la version,
+      publie l'app autonome et compile l'installeur Inno Setup 7 à la même
+      version ; icône VIDAA ; nom « VIDAA - Hisense ». Certificat jamais
+      embarqué. Voir `contexte/publication.md`
+- [ ] Signature de code de l'exe et de l'installeur (évite l'avertissement
+      SmartScreen) — nécessite un certificat de signature
 - [x] **Sources TV et HDMI** (17/11) : corrigé (identifiants textuels « HDMI1 »…
       au lieu des numéros de pyvidaa), confirmé par l'utilisateur
 - [ ] **Contrôles avancés (après l'interface)** :

@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| Release, version et setup Inno | `release-setup` | `version.txt`, `build/`, `installer/`, `src/Directory.Build.props`, `src/Directory.Build.targets`, `src/HisenseTvRemote/Resources/VidaaHisense.ico`, titres des fenêtres (`MainWindow.xaml(.cs)`, `App.xaml.cs`), `contexte/publication.md` | 2026-11-17 20:15 | Claude (session principale) |
+| _(aucune session en cours)_ | | | | |

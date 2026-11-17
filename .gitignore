@@ -49,6 +49,9 @@ obj/
 *.user
 TestResults/
 
+# Version publiée et installeur (générés par une compilation Release)
+dist/
+
 # Outils annexes éventuels
 __pycache__/
 *.pyc

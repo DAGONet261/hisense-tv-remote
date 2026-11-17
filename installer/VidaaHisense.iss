@@ -15,7 +15,7 @@
 
 #define AppName      "VIDAA - Hisense"
 #define AppExeName   "HisenseTvRemote.exe"
-#define AppPublisher "Vaisonet"
+#define AppPublisher "Tiana Riantsoa RAHARISON"
 #define AppDataDir   "HisenseTvRemote"
 
 #ifndef PublishDir

@@ -17,6 +17,10 @@ chercher ailleurs.
 | `README.md` | Présentation rapide du dossier. | — |
 | `THIRD-PARTY-NOTICES.md` | Licences tierces (pyvidaa porté en C#, MQTTnet) ; certificat VIDAA non distribué. Copié à côté de l'exe. | Toute nouvelle dépendance ou code repris |
 | `.gitignore` | Exclusions Git : secrets (`.env`), certificats et clés, APK VIDAA (`sources/`), base, journaux, notes locales. | Nouvelle exclusion si un outil ajoute des fichiers à ignorer |
+| `version.txt` | Version de la dernière Release (une compilation Release l'incrémente). Voir `contexte/publication.md`. | — |
+| `build/` | Scripts : `Publish-Release.ps1` (Release + installeur en ligne de commande), `New-AppIcon.ps1` (icône et images de l'installeur). | Nouveau script de construction/publication |
+| `installer/` | Installeur Inno Setup 7 : `VidaaHisense.iss` (**UTF-8 avec BOM**), `images/` de l'assistant. | Tout ce qui concerne l'installeur |
+| `dist/` | *Généré, non versionné* : `publish/` (app autonome) et `VIDAA-Hisense-Setup-<version>.exe`. | — |
 | `.gitattributes` | Normalisation des fins de ligne entre appareils. | — |
 | `.env` | Secrets réels (mot de passe PKCS12 du certificat VIDAA, `VIDAA_P12_PASSWORD`). **Jamais committé.** | Tout secret/clé réelle |
 | `.env.example` | Modèle des variables attendues, sans valeurs. | Nouvelle variable d'environnement (déclarer ici sans sa valeur) |
@@ -51,6 +55,8 @@ chercher ailleurs.
 | `HisenseTvRemote/ShortcutsWindow.xaml(.cs)` | Aide des raccourcis (F1), générée depuis la table. |
 | `HisenseTvRemote/MouseModeWindow.xaml(.cs)` | Mode souris plein écran (F11) : la souris du PC pilote la TV. |
 | `HisenseTvRemote/AppServices.cs` | Services partagés par les fenêtres (base, réglages, contrôleur, ViewModel, journal). |
+| `Directory.Build.props`, `Directory.Build.targets` | Identité de l'exe (nom, éditeur, icône) ; version lue/incrémentée depuis `version.txt` ; en Release : publication et installeur. |
+| `HisenseTvRemote/Resources/VidaaHisense.ico` | Icône de l'application (VIDAA officielle, 16 à 256 px), générée par `build/New-AppIcon.ps1`. |
 | `HisenseTvRemote/Resources/Theme.xaml` | Thème sombre : couleurs, styles de boutons, champs, listes, barres de défilement. |
 | `HisenseTvRemote.Tests/` | Tests xUnit sans TV ni réseau : `FakeEngine.cs` (faux moteur en mémoire), `CoreTests.cs` (contrôleur, touches, certificat), `VidaaNativeTests.cs` (identifiants, découverte, commandes), `StorageTests.cs` (base), `ViewModelTests.cs` (écran principal), `ShortcutTests.cs` (raccourcis, sources). `dotnet test src/HisenseTvRemote.Tests`. |
 
@@ -63,6 +69,7 @@ chercher ailleurs.
 | `decisions-implementation.md` | Choix techniques pris en autonomie pendant l'implémentation (première passe 16/11, validation réelle 17/11). |
 | `certificat-client.md` | Le certificat client VIDAA : durée de vie (2034), pourquoi il peut changer, pourquoi il ne va ni dans le dépôt ni dans le setup. |
 | `saisie-texte.md` | Saisie de texte à distance : annonces de la TV (formats `input_data`/`inputdata`), liste blanche des sujets, variantes refusées, pistes. |
+| `publication.md` | Version (`version.txt`), compilation Release dans Visual Studio, installeur Inno Setup (UTF-8 avec BOM), ce qui est embarqué ou non. |
 | `interface.md` | Refonte de l'interface : organisation, règles de nommage des boutons, logos fournis par la TV, architecture MVVM. |
 | `base-sqlite.md` | Base SQLite portable : emplacement, tables, chiffrement DPAPI des jetons, import, repli. |
 | `portage-natif-csharp.md` | Moteur natif C# : correspondance avec pyvidaa, mesures, améliorations, points d'attention. |

@@ -88,7 +88,7 @@ Générer.
   installées) ; l'exe garde son nom technique `HisenseTvRemote.exe` (pas
   d'espace dans le nom de fichier) et le dossier de données reste
   `HisenseTvRemote`.
-- **Éditeur** : « Vaisonet » (à changer au besoin : `Company`/`Copyright`
+- **Éditeur et copyright** : « Tiana Riantsoa RAHARISON » (à changer au besoin : `Company`/`Copyright`
   dans `Directory.Build.props` et `AppPublisher` dans le `.iss`).
 - **Icône** : icône officielle de l'app VIDAA (fond jaune `#FFE212`, logo
   noir), reconstruite en grand à partir du logo de l'app pour rester nette
