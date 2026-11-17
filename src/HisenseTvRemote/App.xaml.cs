@@ -27,7 +27,7 @@ public partial class App : Application
         catch (IOException) { }
         catch (UnauthorizedAccessException) { }
         MessageBox.Show($"Une erreur inattendue s'est produite ; l'application continue.\n\n{e.Exception.Message}",
-            "Télécommande Hisense", MessageBoxButton.OK, MessageBoxImage.Warning);
+            "VIDAA - Hisense", MessageBoxButton.OK, MessageBoxImage.Warning);
         e.Handled = true;
     }
 }

@@ -24,7 +24,7 @@ public partial class MainWindow : Window
         try { _app = AppServices.Create(); }
         catch (Exception ex) when (ex is Microsoft.Data.Sqlite.SqliteException or IOException or UnauthorizedAccessException)
         {
-            MessageBox.Show($"Impossible d'ouvrir la base de l'application :\n{ex.Message}", "Télécommande Hisense",
+            MessageBox.Show($"Impossible d'ouvrir la base de l'application :\n{ex.Message}", "VIDAA - Hisense",
                 MessageBoxButton.OK, MessageBoxImage.Error);
             Application.Current.Shutdown(1);
             _app = null!;

@@ -1,0 +1,63 @@
+﻿<Project>
+  <!--
+    Version et installeur, pilotés par version.txt (racine du dépôt).
+
+    - Toute compilation lit version.txt et l'applique à l'exe (Debug comme Release).
+    - Une compilation Release (Visual Studio ou dotnet build -c Release) :
+        1. prend la version suivante (dernier nombre + 1) ;
+        2. compile ; si la compilation réussit, enregistre cette version dans version.txt ;
+        3. publie l'app autonome dans dist\publish\ ;
+        4. compile l'installeur Inno Setup dans dist\, à la même version.
+    - Désactiver l'incrément : -p:HtrBump=false ; désactiver l'installeur : -p:HtrSetup=false.
+    Détail : contexte/publication.md.
+  -->
+
+  <Target Name="HtrApplyVersion" BeforeTargets="BeforeBuild"
+          Condition="'$(MSBuildProjectName)' == 'HisenseTvRemote'">
+    <PropertyGroup>
+      <_HtrVersion Condition="'$(HtrVersionOverride)' != ''">$(HtrVersionOverride)</_HtrVersion>
+      <_HtrVersion Condition="'$(_HtrVersion)' == ''">$([System.IO.File]::ReadAllText('$(HtrVersionFile)').Trim())</_HtrVersion>
+      <_HtrBumping>false</_HtrBumping>
+      <_HtrBumping Condition="'$(Configuration)' == 'Release' And '$(HtrBump)' != 'false' And '$(HtrPackaging)' != 'true' And '$(DesignTimeBuild)' != 'true' And '$(HtrVersionOverride)' == ''">true</_HtrBumping>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(_HtrBumping)' == 'true'">
+      <_HtrMajor>$([System.Version]::Parse('$(_HtrVersion)').Major)</_HtrMajor>
+      <_HtrMinor>$([System.Version]::Parse('$(_HtrVersion)').Minor)</_HtrMinor>
+      <_HtrBuild>$([System.Version]::Parse('$(_HtrVersion)').Build)</_HtrBuild>
+      <_HtrRevision>$([System.Version]::Parse('$(_HtrVersion)').Revision)</_HtrRevision>
+      <_HtrVersion>$(_HtrMajor).$(_HtrMinor).$(_HtrBuild).$([MSBuild]::Add($(_HtrRevision), 1))</_HtrVersion>
+    </PropertyGroup>
+    <PropertyGroup>
+      <Version>$(_HtrVersion)</Version>
+      <AssemblyVersion>$(_HtrVersion)</AssemblyVersion>
+      <FileVersion>$(_HtrVersion)</FileVersion>
+      <InformationalVersion>$(_HtrVersion)</InformationalVersion>
+    </PropertyGroup>
+    <Message Importance="high" Condition="'$(_HtrBumping)' == 'true'" Text="VIDAA - Hisense : nouvelle version $(_HtrVersion)" />
+    <Message Importance="high" Condition="'$(_HtrBumping)' != 'true'" Text="VIDAA - Hisense : version $(_HtrVersion)" />
+  </Target>
+
+  <Target Name="HtrRelease" AfterTargets="Build"
+          Condition="'$(MSBuildProjectName)' == 'HisenseTvRemote' And '$(Configuration)' == 'Release' And '$(HtrPackaging)' != 'true' And '$(DesignTimeBuild)' != 'true'">
+    <!-- 1. La compilation a réussi : la version est acquise. -->
+    <WriteLinesToFile File="$(HtrVersionFile)" Lines="$(_HtrVersion)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <!-- 2. Publication autonome win-x64, à la même version, dans un dossier propre. -->
+    <RemoveDir Directories="$(HtrDistDir)publish" />
+    <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Publish"
+             Properties="Configuration=Release;RuntimeIdentifier=win-x64;SelfContained=true;PublishDir=$(HtrDistDir)publish\;HtrPackaging=true;HtrVersionOverride=$(_HtrVersion)" />
+
+    <!-- 3. Installeur Inno Setup (ignoré avec un avertissement si Inno Setup est absent). -->
+    <PropertyGroup>
+      <HtrIscc Condition="'$(HtrIscc)' == '' And Exists('$(ProgramFiles)\Inno Setup 7\ISCC.exe')">$(ProgramFiles)\Inno Setup 7\ISCC.exe</HtrIscc>
+      <HtrIscc Condition="'$(HtrIscc)' == '' And Exists('$(MSBuildProgramFiles32)\Inno Setup 7\ISCC.exe')">$(MSBuildProgramFiles32)\Inno Setup 7\ISCC.exe</HtrIscc>
+      <HtrIscc Condition="'$(HtrIscc)' == '' And Exists('$(MSBuildProgramFiles32)\Inno Setup 6\ISCC.exe')">$(MSBuildProgramFiles32)\Inno Setup 6\ISCC.exe</HtrIscc>
+    </PropertyGroup>
+    <Warning Condition="'$(HtrSetup)' != 'false' And '$(HtrIscc)' == ''"
+             Text="Inno Setup introuvable : installeur non généré (application publiée dans $(HtrDistDir)publish)." />
+    <Exec Condition="'$(HtrSetup)' != 'false' And '$(HtrIscc)' != ''"
+          Command="&quot;$(HtrIscc)&quot; /Q &quot;/DAppVersion=$(_HtrVersion)&quot; &quot;/DPublishDir=$(HtrDistDir)publish&quot; &quot;/O$(HtrDistDir.TrimEnd('\'))&quot; &quot;$(HtrRoot)installer\VidaaHisense.iss&quot;" />
+    <Message Condition="'$(HtrSetup)' != 'false' And '$(HtrIscc)' != ''" Importance="high"
+             Text="Installeur : $(HtrDistDir)VIDAA-Hisense-Setup-$(_HtrVersion).exe" />
+  </Target>
+</Project>

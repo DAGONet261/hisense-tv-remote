@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:HisenseTvRemote.Core.ViewModels;assembly=HisenseTvRemote.Core"
         mc:Ignorable="d" d:DataContext="{d:DesignInstance Type=vm:RemoteViewModel}"
-        Title="Télécommande Hisense" Height="840" Width="1020" MinWidth="760" MinHeight="640"
+        Title="VIDAA - Hisense" Height="840" Width="1020" MinWidth="760" MinHeight="640"
         Style="{StaticResource DarkWindow}" PreviewMouseWheel="OnWindowWheel">
     <Window.Resources>
         <!-- Libellé français sous chaque bouton de la télécommande. -->

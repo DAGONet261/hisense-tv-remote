@@ -1,0 +1,24 @@
+﻿<Project>
+  <!--
+    Identité de l'application (projet WPF seulement ; le projet temporaire « _wpftmp » de la
+    compilation XAML reçoit les mêmes réglages). Version : voir Directory.Build.targets et
+    contexte/publication.md.
+  -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'HisenseTvRemote' Or $(MSBuildProjectName.EndsWith('_wpftmp'))">
+    <HtrRoot>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..'))</HtrRoot>
+    <HtrVersionFile>$(HtrRoot)version.txt</HtrVersionFile>
+    <HtrDistDir>$(HtrRoot)dist\</HtrDistDir>
+
+    <Product>VIDAA - Hisense</Product>
+    <AssemblyTitle>VIDAA - Hisense</AssemblyTitle>
+    <Description>Télécommande pour téléviseurs Hisense VIDAA</Description>
+    <Company>Vaisonet</Company>
+    <Copyright>© 2026 Vaisonet</Copyright>
+    <NeutralLanguage>fr-FR</NeutralLanguage>
+    <ApplicationIcon>Resources\VidaaHisense.ico</ApplicationIcon>
+
+    <!-- Publication autonome Windows x64 (aucun .NET à installer sur le poste cible). -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+</Project>
