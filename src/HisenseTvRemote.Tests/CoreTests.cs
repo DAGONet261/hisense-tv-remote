@@ -71,12 +71,14 @@ public class CoreTests : IDisposable
     public void Catalogue_des_touches()
     {
         Assert.Equal(KeyCatalog.All.Count, KeyCatalog.All.Distinct().Count());
-        Assert.Equal(1 + 5 + 4 + 3 + 4 + 10 + 2 + 4 + 13, KeyCatalog.All.Count);
-        // « back » rembobine (KEY_BACK) : rangée avec la lecture ; « returns » est le retour arrière.
-        Assert.Contains("back", KeyCatalog.Playback);
+        Assert.Equal(1 + 5 + 4 + 3 + 4 + 10 + 2 + 4 + 14, KeyCatalog.All.Count);
+        // « backs » rembobine (KEY_BACKS) : rangée avec la lecture ; « returns » est le retour arrière ;
+        // « back » (KEY_BACK) ne fait rien sur la 55A53FXVT : il n'est plus dans la lecture.
+        Assert.Contains("backs", KeyCatalog.Playback);
+        Assert.DoesNotContain("back", KeyCatalog.Playback);
         Assert.Contains("returns", KeyCatalog.Menu);
         Assert.Equal(("Retour", "Rembobiner", "Accueil", "7"),
-            (KeyCatalog.Label("returns"), KeyCatalog.Label("back"), KeyCatalog.Label("home"), KeyCatalog.Label("7")));
+            (KeyCatalog.Label("returns"), KeyCatalog.Label("backs"), KeyCatalog.Label("home"), KeyCatalog.Label("7")));
         // Chaque touche (hors chiffres) a un nom français, et la TV la connaît.
         Assert.All(KeyCatalog.All.Where(k => !char.IsDigit(k[0])), k => Assert.True(KeyCatalog.Labels.ContainsKey(k), k));
         Assert.All(KeyCatalog.All, k => Assert.NotNull(VidaaCatalog.ResolveKey(k)));

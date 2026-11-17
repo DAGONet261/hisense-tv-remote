@@ -79,7 +79,7 @@ public static class KeyboardShortcuts
         C("Lecture/Pause (clavier multimédia)", "Lecture / Pause", "Lecture", ShortcutCommand.PlayPause, KeyMods.None, "MediaPlayPause"),
         K("Stop (clavier multimédia)", "stop", "Lecture", KeyMods.None, "MediaStop"),
         K("Piste suivante (clavier multimédia)", "forwards", "Lecture", KeyMods.None, "MediaNextTrack"),
-        K("Piste précédente (clavier multimédia)", "back", "Lecture", KeyMods.None, "MediaPreviousTrack"),
+        K("Piste précédente (clavier multimédia)", "backs", "Lecture", KeyMods.None, "MediaPreviousTrack"),
 
         new("Ctrl + « + »", KeyCatalog.Label("zoomin"), "Affichage", ShortcutCommand.TvKey, "zoomin")
             { Keys = ["Add", "OemPlus"], Chars = ['+', '='], Mods = KeyMods.Ctrl },

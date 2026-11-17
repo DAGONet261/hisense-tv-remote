@@ -27,3 +27,33 @@
   (pas les apps intégrées ; contenus HDCP noirs).
 - Webcam pointée sur l'écran.
 - Sens inverse (PC → TV) : Miracast/Win+K, non vérifié sur ce modèle.
+
+## Touches de lecture vérifiées (17/11/2026, lecteur USB et YouTube)
+
+- **Rembobiner = `KEY_BACKS`** (avec un S, comme `KEY_FORWARDS`). Essai
+  chronométré dans le lecteur USB, avec témoin : `KEY_BACKS` recule (x2,
+  x4…), `KEY_REWIND`, `KEY_BACKWARDS`, `KEY_FASTBACKWARD`, `KEY_REW`,
+  `KEY_BACKWARD`, `KEY_FASTBACK` ne font rien.
+- **`KEY_BACK` ne rembobine pas**, contrairement à ce que supposent pyvidaa
+  et les intégrations GitHub (et à notre note du 17/11 au matin) ; effet
+  inconnu, gardé dans « autres touches ».
+- `KEY_FORWARDS` avance (x2, x4, x8…) ; `KEY_PLAY`, `KEY_PAUSE`, `KEY_STOP`
+  fonctionnent. `KEY_LEFT` recule aussi dans le lecteur USB, mais l'app
+  utilise la touche dédiée.
+- La TV accepte tout nom de touche sans répondre (QoS 0, pas d'accusé) :
+  seul l'œil devant l'écran départage. Ne pas faire ces essais avec l'app
+  ouverte : même identifiant MQTT, la TV coupe l'une des deux connexions.
+
+## Partage vers la TV (DLNA) — vérifié le 17/11
+
+- Lecteur DLNA standard : SSDP `MediaRenderer:1`, description
+  `http://<tv>:38400/MediaServer/rendererdevicedesc.xml`, nom « TV Salon ».
+  Services `AVTransport` (`/upnp/control/mingusavtr`), `RenderingControl`
+  (`/upnp/control/mingusrcr`), `ConnectionManager`
+  (`/upnp/control/minguscmr`). Port 18400 fermé sur ce modèle.
+- Formats : photos JPEG, PNG, GIF, BMP, MPO ; vidéos MP4, MKV, WebM, AVI,
+  MOV, MPEG-TS, WMV… ; audio MP3, FLAC, AAC, OGG, WAV, WMA.
+- **Photo affichée avec succès** : PC = petit serveur HTTP, puis
+  `SetAVTransportURI` (avec métadonnées DIDL-Lite) + `Play`. La TV vient
+  chercher le fichier ~15 s après (ouverture de son lecteur). Il faut
+  autoriser le port du PC dans le pare-feu Windows (réseau privé).

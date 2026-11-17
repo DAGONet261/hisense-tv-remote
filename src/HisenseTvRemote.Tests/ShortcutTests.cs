@@ -43,6 +43,8 @@ public class ShortcutTests : IDisposable
         Assert.Equal(ShortcutCommand.VolumeDown, KeyboardShortcuts.Match("Subtract", '-', KeyMods.None)!.Command);
         Assert.Equal(ShortcutCommand.Mute, KeyboardShortcuts.Match("M", 'm', KeyMods.Ctrl)!.Command);
         Assert.Equal(ShortcutCommand.PlayPause, KeyboardShortcuts.Match("Space", ' ', KeyMods.None)!.Command);
+        Assert.Equal("backs", KeyboardShortcuts.Match("MediaPreviousTrack", null, KeyMods.None)!.TvKey);   // rembobiner
+        Assert.Equal("forwards", KeyboardShortcuts.Match("MediaNextTrack", null, KeyMods.None)!.TvKey);
         Assert.Null(KeyboardShortcuts.Match("M", 'm', KeyMods.None));            // lettre seule : libre
         Assert.Null(KeyboardShortcuts.Match("D5", '(', KeyMods.None));           // chiffre seul : libre
     }

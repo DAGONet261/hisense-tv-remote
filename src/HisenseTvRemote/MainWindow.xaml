@@ -215,7 +215,7 @@
                         <UniformGrid Columns="5">
                             <StackPanel>
                                 <Button AutomationProperties.Name="Rembobiner" Style="{StaticResource IconButton}" Content="&#xEB9E;" Command="{Binding KeyCommand}"
-                                        CommandParameter="back" ToolTip="Touche back (KEY_BACK)"/>
+                                        CommandParameter="backs" ToolTip="Touche backs (KEY_BACKS)"/>
                                 <TextBlock Style="{StaticResource Caption}" Text="Rembobiner"/>
                             </StackPanel>
                             <StackPanel>

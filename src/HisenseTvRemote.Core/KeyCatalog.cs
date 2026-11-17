@@ -5,17 +5,18 @@ public static class KeyCatalog
 {
     public static readonly IReadOnlyList<string> Power = ["power"];
     public static readonly IReadOnlyList<string> Navigation = ["up", "down", "left", "right", "ok"];
-    // « back » envoie KEY_BACK, qui REMBOBINE sur la 55A53FXVT (vérifié le 17/11) : rangée avec la lecture.
+    // Rembobiner = « backs » (KEY_BACKS), pendant de « forwards » : vérifié le 17/11 dans le lecteur USB et
+    // YouTube. KEY_BACK (« back », le rembobinage selon pyvidaa) n'y fait rien : rangé dans les autres touches.
     // Le retour arrière est « returns » (KEY_RETURNS).
     public static readonly IReadOnlyList<string> Menu = ["menu", "home", "returns", "exit"];
     public static readonly IReadOnlyList<string> Volume = ["volumeup", "volumedown", "mute"];
-    public static readonly IReadOnlyList<string> Playback = ["play", "pause", "stop", "back"];
+    public static readonly IReadOnlyList<string> Playback = ["play", "pause", "stop", "backs"];
     public static readonly IReadOnlyList<string> Digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
     public static readonly IReadOnlyList<string> Channels = ["channelup", "channeldown"];
     public static readonly IReadOnlyList<string> Colors = ["red", "green", "yellow", "blue"];
     public static readonly IReadOnlyList<string> Other =
     [
-        "channeldot", "forwards", "info", "leftmousekeys", "mute_long_press", "ok_long_press",
+        "back", "channeldot", "forwards", "info", "leftmousekeys", "mute_long_press", "ok_long_press",
         "subtitle", "uddleftmousekeys", "uduleftmousekeys", "voicedown", "voiceup", "zoomin", "zoomout"
     ];
 
@@ -30,7 +31,7 @@ public static class KeyCatalog
         ["menu"] = "Menu", ["home"] = "Accueil", ["returns"] = "Retour", ["exit"] = "Quitter",
         ["volumeup"] = "Volume +", ["volumedown"] = "Volume −", ["mute"] = "Muet",
         ["play"] = "Lecture", ["pause"] = "Pause", ["stop"] = "Stop",
-        ["back"] = "Rembobiner", ["forwards"] = "Avance rapide",
+        ["backs"] = "Rembobiner", ["forwards"] = "Avance rapide",
         ["channelup"] = "Chaîne +", ["channeldown"] = "Chaîne −",
         ["red"] = "Rouge", ["green"] = "Vert", ["yellow"] = "Jaune", ["blue"] = "Bleu",
         ["channeldot"] = "Point (chaîne)", ["info"] = "Infos", ["subtitle"] = "Sous-titres",
@@ -39,6 +40,7 @@ public static class KeyCatalog
         // Touches peu documentées : libellés d'après leur nom, effet à confirmer devant la TV.
         ["leftmousekeys"] = "Mode souris", ["uddleftmousekeys"] = "Souris : appui", ["uduleftmousekeys"] = "Souris : relâche",
         ["voiceup"] = "Voix : relâche", ["voicedown"] = "Voix : appui",
+        ["back"] = "Back (sans effet constaté)",
     };
 
     public static string Label(string key) => Labels.TryGetValue(key, out var l) ? l : key;

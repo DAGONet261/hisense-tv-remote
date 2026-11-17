@@ -53,6 +53,7 @@ public class VidaaNativeTests : IDisposable
     {
         Assert.Equal("KEY_VOLUMEUP", VidaaCatalog.ResolveKey("volumeup"));
         Assert.Equal("KEY_RETURNS", VidaaCatalog.ResolveKey("returns"));
+        Assert.Equal("KEY_BACKS", VidaaCatalog.ResolveKey("backs"));   // rembobiner (vérifié le 17/11)
         Assert.Equal("KEY_BACK", VidaaCatalog.ResolveKey("back"));
         Assert.Equal("KEY_0", VidaaCatalog.ResolveKey("0"));
         Assert.Null(VidaaCatalog.ResolveKey("nosuch"));

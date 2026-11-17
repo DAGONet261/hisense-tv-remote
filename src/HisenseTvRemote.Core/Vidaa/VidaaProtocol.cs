@@ -135,7 +135,7 @@ public static class VidaaCatalog
     {
         "KEY_POWER", "KEY_UP", "KEY_DOWN", "KEY_LEFT", "KEY_RIGHT", "KEY_OK", "KEY_OK_LONG_PRESS", "KEY_MENU",
         "KEY_RETURNS", "KEY_EXIT", "KEY_HOME", "KEY_VOLUMEUP", "KEY_VOLUMEDOWN", "KEY_MUTE", "KEY_MUTE_LONG_PRESS",
-        "KEY_VOICEUP", "KEY_VOICEDOWN", "KEY_PLAY", "KEY_PAUSE", "KEY_STOP", "KEY_FORWARDS", "KEY_BACK",
+        "KEY_VOICEUP", "KEY_VOICEDOWN", "KEY_PLAY", "KEY_PAUSE", "KEY_STOP", "KEY_FORWARDS", "KEY_BACKS", "KEY_BACK",
         "KEY_0", "KEY_1", "KEY_2", "KEY_3", "KEY_4", "KEY_5", "KEY_6", "KEY_7", "KEY_8", "KEY_9",
         "KEY_CHANNELUP", "KEY_CHANNELDOWN", "KEY_CHANNELDOT", "KEY_RED", "KEY_GREEN", "KEY_YELLOW", "KEY_BLUE",
         "KEY_SUBTITLE", "KEY_INFO", "KEY_LEFTMOUSEKEYS", "KEY_UDDLEFTMOUSEKEYS", "KEY_UDULEFTMOUSEKEYS",
@@ -143,8 +143,9 @@ public static class VidaaCatalog
     };
 
     /// <summary>
-    /// Même règle que <c>tv key</c> : « KEY_ » + nom en majuscules. Attention : « back » donne donc
-    /// KEY_BACK (rembobinage pour pyvidaa) ; le retour arrière est « returns » (KEY_RETURNS).
+    /// Même règle que <c>tv key</c> : « KEY_ » + nom en majuscules. Rembobiner = « backs » (KEY_BACKS,
+    /// pendant de KEY_FORWARDS, vérifié le 17/11 sur la 55A53FXVT) ; « back » (KEY_BACK, que pyvidaa
+    /// présente comme le rembobinage) est sans effet constaté ; le retour arrière est « returns » (KEY_RETURNS).
     /// </summary>
     public static string? ResolveKey(string name)
     {
