@@ -73,13 +73,18 @@ l'avancement (par toi, ou par Claude Code dans Visual Studio).
         L'interface est prête (frappe instantanée à chaque lettre), mais le
         TV annonce le contenu des champs VIDAA et du navigateur (écoute du
         17/11), mais refuse les 175 variantes d'envoi essayées ; APK chiffré.
-        Pistes : vérifier l'app VIDAA du téléphone, clavier à l'écran piloté,
-        lecture seule. Voir `contexte/saisie-texte.md`
+        L'app VIDAA du téléphone, elle, y arrive, mais son code et ses
+        journaux sont chiffrés (non contournés). Pistes : clavier à l'écran
+        piloté, lecture seule. Voir `contexte/saisie-texte.md`
   - [x] Raccourcis clavier (17/11) : flèches, Entrée = OK, Échap = Retour,
         Ctrl ± = zoom, volume, chaînes, couleurs, multimédia, F1 = aide ;
         validés sur la TV. Voir `contexte/interface.md`
   - [ ] Raccourcis configurables par l'utilisateur (table prête dans
         `KeyboardShortcuts`, à exposer et stocker en base)
+- [ ] ~~Compte VIDAA (cloud) dans l'app~~ — **hors périmètre** (17/11) : tout
+      fonctionne en local ; API cloud non documentée, fragile, plus de
+      secrets. À reconsidérer seulement pour une fonction uniquement cloud
+      (pour piloter hors de chez soi, préférer un VPN)
 - [ ] Réserver une IP fixe pour la TV sur la box/le routeur (MAC dans
       `CLAUDE.local.md`) — action utilisateur
 - [x] Réduire la latence (17/11) : pont Python persistant (`vidaa_bridge.py` +
