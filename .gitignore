@@ -1,0 +1,55 @@
+# ============================================================================
+# Ne JAMAIS envoyer sur GitHub (même dépôt privé) — vérifié avant le premier envoi
+# ============================================================================
+
+# Secrets (règle du projet : secrets uniquement dans .env)
+.env
+.env.*
+!.env.example
+
+# Certificat client VIDAA, clés et magasins de certificats (propriété d'Hisense, secrets)
+*.p12
+*.pfx
+*.pem
+*.key
+*.bks
+*.jks
+*.keystore
+certs/
+
+# Contenu de l'app officielle VIDAA (APK décompressé : code d'Hisense + certificat)
+*.apk
+*.xapk
+*.apks
+sources/*
+!sources/README.md
+
+# Notes propres à ce poste (chemins, TV de test) — voir CLAUDE.local.md
+CLAUDE.local.md
+
+# Base SQLite de l'app (TV, jetons d'appairage chiffrés, journal) — propre à chaque poste
+*.db
+*.db-wal
+*.db-shm
+
+# Journaux (dont erreurs.log de l'app)
+*.log
+
+# Réglages locaux de Claude Code (permissions propres à chaque poste)
+.claude/settings.local.json
+
+# ============================================================================
+# Fichiers générés
+# ============================================================================
+
+# .NET / WPF
+bin/
+obj/
+.vs/
+*.user
+TestResults/
+
+# Outils annexes éventuels
+__pycache__/
+*.pyc
+.venv/

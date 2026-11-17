@@ -1,0 +1,29 @@
+<Window x:Class="HisenseTvRemote.JournalWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Journal des commandes" Height="560" Width="760" MinWidth="520" MinHeight="380"
+        WindowStartupLocation="CenterOwner" Style="{StaticResource DarkWindow}">
+    <DockPanel Margin="14">
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button Style="{StaticResource SmallButton}" Content="Copier la commande sélectionnée" Click="OnCopy"
+                        ToolTip="Copie la commande, son code de sortie et ses sorties"/>
+                <Button Style="{StaticResource SmallButton}" Content="Vider le journal" Foreground="{StaticResource DangerBrush}"
+                        Click="OnClear" ToolTip="Efface l'affichage et l'historique conservé en base"/>
+            </StackPanel>
+            <TextBlock Text="Journal des commandes" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+        </DockPanel>
+        <TextBlock x:Name="DbPath" DockPanel.Dock="Top" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="2,0,0,8"
+                   TextTrimming="CharacterEllipsis"/>
+        <TextBox x:Name="Detail" DockPanel.Dock="Bottom" Height="170" Margin="0,10,0,0" Style="{StaticResource ConsoleBox}"/>
+        <ListView x:Name="List" SelectionChanged="OnSelected">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Heure" Width="70" DisplayMemberBinding="{Binding Time}"/>
+                    <GridViewColumn Header="Code" Width="60" DisplayMemberBinding="{Binding ExitCode}"/>
+                    <GridViewColumn Header="Commande" Width="560" DisplayMemberBinding="{Binding CommandLine}"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </DockPanel>
+</Window>

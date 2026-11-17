@@ -1,0 +1,46 @@
+<Window x:Class="HisenseTvRemote.MouseModeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Mode souris" WindowStyle="None" WindowState="Maximized" ResizeMode="NoResize" Topmost="True"
+        ShowInTaskbar="False" Cursor="None" Style="{StaticResource DarkWindow}">
+    <!-- Plein écran : toute la surface capte la souris du PC pour piloter la TV. -->
+    <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="640">
+            <TextBlock Style="{StaticResource Icon}" Text="&#xE962;" FontSize="64" Foreground="{StaticResource AccentBrush}"/>
+            <TextBlock Text="Mode souris" FontSize="30" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,12,0,4"/>
+            <TextBlock x:Name="TvName" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" Margin="0,0,0,22"/>
+            <Grid HorizontalAlignment="Center">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+                </Grid.RowDefinitions>
+                <Grid.Resources>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Margin" Value="0,4"/>
+                        <Setter Property="FontSize" Value="15"/>
+                    </Style>
+                </Grid.Resources>
+                <TextBlock Text="Déplacer la souris" Foreground="{StaticResource MutedBrush}" Margin="0,4,24,4"/>
+                <TextBlock Grid.Column="1" Text="naviguer (haut, bas, gauche, droite)"/>
+                <TextBlock Grid.Row="1" Text="Clic gauche" Foreground="{StaticResource MutedBrush}"/>
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="OK"/>
+                <TextBlock Grid.Row="2" Text="Clic droit / bouton « précédent »" Foreground="{StaticResource MutedBrush}" Margin="0,4,24,4"/>
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="Retour"/>
+                <TextBlock Grid.Row="3" Text="Clic molette" Foreground="{StaticResource MutedBrush}"/>
+                <TextBlock Grid.Row="3" Grid.Column="1" Text="Accueil"/>
+                <TextBlock Grid.Row="4" Text="Molette  /  Ctrl  /  Maj + molette" Foreground="{StaticResource MutedBrush}" Margin="0,4,24,4"/>
+                <TextBlock Grid.Row="4" Grid.Column="1" Text="défiler  ·  volume  ·  sensibilité"/>
+                <TextBlock Grid.Row="5" Text="Échap" Foreground="{StaticResource MutedBrush}"/>
+                <TextBlock Grid.Row="5" Grid.Column="1" Text="quitter le mode souris"/>
+            </Grid>
+            <TextBlock x:Name="Sensitivity" HorizontalAlignment="Center" Margin="0,18,0,0" Foreground="{StaticResource MutedBrush}"/>
+            <TextBlock x:Name="LastAction" HorizontalAlignment="Center" Margin="0,28,0,0" FontSize="20"
+                       Foreground="{StaticResource AccentBrush}" Text=" "/>
+            <TextBlock x:Name="Status" HorizontalAlignment="Center" Margin="0,8,0,0" Foreground="{StaticResource MutedBrush}"
+                       TextWrapping="Wrap" TextAlignment="Center"/>
+            <TextBlock HorizontalAlignment="Center" Margin="0,30,0,0" Foreground="{StaticResource MutedBrush}" FontSize="11"
+                       TextWrapping="Wrap" TextAlignment="Center"
+                       Text="Le pointeur libre de la TV n'est pas encore disponible : les mouvements sont traduits en navigation."/>
+        </StackPanel>
+    </Grid>
+</Window>

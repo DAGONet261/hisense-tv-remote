@@ -1,0 +1,139 @@
+<Window x:Class="HisenseTvRemote.TvWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="TV et réglages" Height="720" Width="980" MinWidth="760" MinHeight="520"
+        WindowStartupLocation="CenterOwner" Style="{StaticResource DarkWindow}">
+    <Window.Resources>
+        <Style x:Key="Label" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="3,0,8,0"/>
+        </Style>
+        <Style x:Key="Hint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="3,2,3,0"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="14">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="460"/>
+            <ColumnDefinition Width="14"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- TV active -->
+                <Border Style="{StaticResource Panel}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="TV ACTIVE"/>
+                        <TextBlock x:Name="ActiveTv" FontSize="18" FontWeight="SemiBold" Margin="2,0,0,8"/>
+                        <WrapPanel>
+                            <Button Style="{StaticResource SmallButton}" Content="Voir les TV enregistrées" Click="OnShowTvs"/>
+                            <Button Style="{StaticResource SmallButton}" Content="Définir comme TV par défaut" Click="OnSetDefault"
+                                    ToolTip="TV choisie au démarrage"/>
+                            <Button Style="{StaticResource SmallButton}" Content="État de la TV" Click="OnStatus"
+                                    ToolTip="Ce que la TV affiche (accueil, app en cours…)"/>
+                            <Button Style="{StaticResource SmallButton}" Content="Infos matérielles" Click="OnInfo"
+                                    ToolTip="Modèle, firmware, capacités déclarées par la TV"/>
+                        </WrapPanel>
+                        <DockPanel Margin="0,8,0,0">
+                            <TextBlock DockPanel.Dock="Left" Style="{StaticResource Label}" Text="Nouveau nom"/>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Renommer" Click="OnRename"/>
+                            <TextBox x:Name="RenameBox"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Réseau -->
+                <Border Style="{StaticResource Panel}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="RÉSEAU"/>
+                        <WrapPanel>
+                            <Button Style="{StaticResource SmallButton}" Content="Rechercher les TV sur le réseau" Click="OnDiscover"/>
+                            <Button Style="{StaticResource SmallButton}" Content="Retrouver l'IP de la TV active" Click="OnRelocate"
+                                    ToolTip="Si la TV a changé d'adresse IP : la retrouve par son adresse MAC"/>
+                        </WrapPanel>
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="AJOUTER UNE TV" Margin="2,12,0,6"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Label}" Text="Adresse IP"/>
+                            <TextBox x:Name="NewIp" Grid.Column="1" ToolTip="Proposée automatiquement après une recherche"/>
+                            <TextBlock Grid.Column="2" Style="{StaticResource Label}" Text="Nom"/>
+                            <TextBox x:Name="NewAlias" Grid.Column="3" ToolTip="Ex. salon, chambre"/>
+                            <Button Grid.Column="4" Style="{StaticResource AccentButton}" Content="Ajouter" Click="OnAddTv"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Appairage -->
+                <Border Style="{StaticResource Panel}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="APPAIRAGE (TV ACTIVE)"/>
+                        <WrapPanel>
+                            <Button Style="{StaticResource AccentButton}" Content="Appairer avec un code PIN…" Click="OnPair"/>
+                            <Button Style="{StaticResource SmallButton}" Content="État de l'appairage" Click="OnAuthStatus"/>
+                            <Button Style="{StaticResource SmallButton}" Content="Renouveler le jeton" Click="OnAuthRefresh"/>
+                            <Button Style="{StaticResource SmallButton}" Content="Oublier l'appairage" Click="OnAuthClear"
+                                    Foreground="{StaticResource DangerBrush}"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Diagnostic -->
+                <Border Style="{StaticResource Panel}" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="DIAGNOSTIC (ESSAIS DE PROTOCOLE)"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="3,0,3,8"
+                                   Text="Écoute : enregistre pendant 60 s tout ce que la TV annonce (ouvrez par exemple la recherche YouTube pendant ce temps). Résultat ici et dans le journal."/>
+                        <Button Style="{StaticResource SmallButton}" HorizontalAlignment="Left" Content="Écouter la TV pendant 60 s" Click="OnListen"/>
+                        <TextBlock Style="{StaticResource Label}" Text="Message brut — sujet ({client} = identifiant de l'app)" Margin="3,10,3,2"/>
+                        <TextBox x:Name="RawTopic" Text="/remoteapp/tv/ui_service/{client}/actions/" AutomationProperties.Name="Sujet du message brut"/>
+                        <TextBlock Style="{StaticResource Label}" Text="Contenu" Margin="3,6,3,2"/>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Content="Envoyer" Click="OnRawSend"/>
+                            <TextBox x:Name="RawPayload" AutomationProperties.Name="Contenu du message brut"/>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Certificat client -->
+                <Border Style="{StaticResource Panel}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="CERTIFICAT CLIENT VIDAA"/>
+                        <TextBlock x:Name="CertState" TextWrapping="Wrap" Margin="3,0,3,6"/>
+                        <TextBlock Style="{StaticResource Hint}" Margin="3,0,3,8"
+                                   Text="Exigé par la TV. Il se trouve dans l'APK de l'app VIDAA (res/raw/client_mobile_android.p12) ; il n'est pas fourni avec cette application."/>
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Left" Style="{StaticResource Label}" Text="Mot de passe du .p12"/>
+                            <PasswordBox x:Name="P12Password" Background="{StaticResource SurfaceBrush}" Foreground="{StaticResource TextBrush}"
+                                         CaretBrush="{StaticResource TextBrush}" BorderBrush="{StaticResource BorderBrush}" Padding="6,4" Margin="3"
+                                         AutomationProperties.Name="Mot de passe du .p12"/>
+                        </DockPanel>
+                        <WrapPanel>
+                            <Button Style="{StaticResource AccentButton}" Content="Importer le certificat (.p12)…" Click="OnImportP12"/>
+                            <Button Style="{StaticResource SmallButton}" Content="Importer .pem + .key…" Click="OnImportPem"/>
+                            <Button Style="{StaticResource SmallButton}" Content="Ouvrir le dossier" Click="OnOpenCertDir"/>
+                        </WrapPanel>
+                        <TextBlock x:Name="DbPathText" Style="{StaticResource Hint}" Margin="3,10,3,0"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Résultat -->
+        <Border Grid.Column="2" Style="{StaticResource Panel}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Style="{StaticResource SectionTitle}" Text="RÉSULTAT"/>
+                <TextBox x:Name="Output" Style="{StaticResource ConsoleBox}" BorderThickness="0"/>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

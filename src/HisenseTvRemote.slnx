@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="HisenseTvRemote.Core/HisenseTvRemote.Core.csproj" />
+  <Project Path="HisenseTvRemote.Tests/HisenseTvRemote.Tests.csproj" />
+  <Project Path="HisenseTvRemote/HisenseTvRemote.csproj" />
+</Solution>

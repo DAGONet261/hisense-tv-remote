@@ -1,0 +1,4 @@
+# Fins de ligne normalisées (Windows, macOS, Linux) : Git stocke en LF, chaque poste récupère son format.
+* text=auto
+*.png binary
+*.ico binary

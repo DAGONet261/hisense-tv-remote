@@ -1,0 +1,410 @@
+﻿<Window x:Class="HisenseTvRemote.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:HisenseTvRemote.Core.ViewModels;assembly=HisenseTvRemote.Core"
+        mc:Ignorable="d" d:DataContext="{d:DesignInstance Type=vm:RemoteViewModel}"
+        Title="Télécommande Hisense" Height="840" Width="1020" MinWidth="760" MinHeight="640"
+        Style="{StaticResource DarkWindow}" PreviewMouseWheel="OnWindowWheel">
+    <Window.Resources>
+        <!-- Libellé français sous chaque bouton de la télécommande. -->
+        <Style x:Key="Caption" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,2,0,6"/>
+        </Style>
+        <Style x:Key="KeyCell" TargetType="StackPanel">
+            <Setter Property="Margin" Value="3,0"/>
+            <Setter Property="Width" Value="64"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ===================== En-tête ===================== -->
+        <DockPanel Margin="0,0,0,14">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button AutomationProperties.Name="Mode souris" Style="{StaticResource SmallButton}" Click="OnOpenMouseMode"
+                        ToolTip="Piloter la TV avec la souris, en plein écran (F11 ; Échap pour sortir)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE962;" Margin="0,0,6,0"/>
+                        <TextBlock Text="Mode souris"/>
+                    </StackPanel>
+                </Button>
+                <Button AutomationProperties.Name="Raccourcis clavier" Style="{StaticResource SmallButton}" Click="OnShowShortcuts"
+                        ToolTip="Liste des raccourcis clavier (F1)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE765;" Margin="0,0,6,0"/>
+                        <TextBlock Text="Raccourcis"/>
+                    </StackPanel>
+                </Button>
+                <Button AutomationProperties.Name="TV et réglages" Style="{StaticResource SmallButton}" Click="OnOpenTvWindow" ToolTip="Gérer les TV, l'appairage et les réglages">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE713;" Margin="0,0,6,0"/>
+                        <TextBlock Text="TV et réglages"/>
+                    </StackPanel>
+                </Button>
+                <Button AutomationProperties.Name="Journal" Style="{StaticResource SmallButton}" Click="OnOpenJournal" ToolTip="Historique de toutes les commandes envoyées">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE8FD;" Margin="0,0,6,0"/>
+                        <TextBlock Text="Journal"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+            <!-- Saisie de texte : recopiée dans le champ actif de la TV (recherche YouTube…) -->
+            <Border DockPanel.Dock="Right" Background="{StaticResource SurfaceBrush}" CornerRadius="10" Margin="0,0,12,0"
+                    Width="250" Height="36" VerticalAlignment="Center"
+                    ToolTip="Tapez au clavier : le texte s'écrit dans la zone de recherche de la TV. Entrée ou Échap pour terminer.">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Style="{StaticResource Icon}" Text="&#xE765;" Margin="10,0,6,0"
+                               Foreground="{StaticResource MutedBrush}"/>
+                    <Button DockPanel.Dock="Right" AutomationProperties.Name="Effacer le texte" Style="{StaticResource HeaderButton}"
+                            Width="30" Height="30" Content="&#xE711;" FontSize="11" Command="{Binding ClearTextCommand}"
+                            ToolTip="Effacer le texte (ici et sur la TV)"/>
+                    <Grid>
+                        <TextBox x:Name="TypingBox" AutomationProperties.Name="Saisie de texte" Background="Transparent"
+                                 BorderThickness="0" Margin="0" Padding="2,0"
+                                 Text="{Binding TypedText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                        <TextBlock Text="Tapez pour écrire sur la TV…" IsHitTestVisible="False" Margin="4,0,0,0"
+                                   VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=TypingBox}" Value="">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                </DockPanel>
+            </Border>
+            <Button x:Name="TvPicker" AutomationProperties.Name="Choisir la TV" Style="{StaticResource SmallButton}" HorizontalAlignment="Left" Click="OnPickTv"
+                    ToolTip="Choisir la TV à piloter">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE7F4;" Margin="0,0,8,0" Foreground="{StaticResource AccentBrush}"/>
+                    <TextBlock Text="{Binding CurrentTv, TargetNullValue='Aucune TV'}" FontSize="15" FontWeight="SemiBold"/>
+                    <TextBlock Style="{StaticResource Icon}" Text="&#xE70D;" FontSize="11" Margin="8,0,0,0"/>
+                </StackPanel>
+            </Button>
+        </DockPanel>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ===================== Télécommande ===================== -->
+            <Border Style="{StaticResource Panel}" Width="356">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Rangée du haut -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <StackPanel Style="{StaticResource KeyCell}">
+                                <Button AutomationProperties.Name="Marche / Arrêt" Style="{StaticResource PowerButton}" Content="&#xE7E8;" Command="{Binding PowerCommand}"
+                                        CommandParameter="key" ToolTip="Touche power (bascule marche/veille)"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Marche / Arrêt"/>
+                            </StackPanel>
+                            <StackPanel Style="{StaticResource KeyCell}">
+                                <Button AutomationProperties.Name="Muet" Style="{StaticResource RoundButton}" Content="&#xE74F;" Command="{Binding MuteCommand}" ToolTip="Touche mute"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Muet"/>
+                            </StackPanel>
+                            <StackPanel Style="{StaticResource KeyCell}">
+                                <Button AutomationProperties.Name="Accueil" Style="{StaticResource RoundButton}" Content="&#xE80F;" Command="{Binding KeyCommand}"
+                                        CommandParameter="home" ToolTip="Touche home"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Accueil"/>
+                            </StackPanel>
+                            <StackPanel Style="{StaticResource KeyCell}">
+                                <Button AutomationProperties.Name="Retour" Style="{StaticResource RoundButton}" Content="&#xE72B;" Command="{Binding KeyCommand}"
+                                        CommandParameter="returns" ToolTip="Touche returns (retour arrière)"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Retour"/>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- Pavé directionnel -->
+                        <Grid Width="184" Height="184" Margin="0,4,0,0" HorizontalAlignment="Center">
+                            <Ellipse Fill="{StaticResource SurfaceBrush}" Stroke="{StaticResource BorderBrush}"/>
+                            <Grid>
+                                <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <Button AutomationProperties.Name="Haut" Grid.Column="1" Style="{StaticResource DPadButton}" Content="&#xE70E;"
+                                        Command="{Binding KeyCommand}" CommandParameter="up" ToolTip="Haut (up)"/>
+                                <Button AutomationProperties.Name="Gauche" Grid.Row="1" Style="{StaticResource DPadButton}" Content="&#xE76B;"
+                                        Command="{Binding KeyCommand}" CommandParameter="left" ToolTip="Gauche (left)"/>
+                                <Button AutomationProperties.Name="OK" Grid.Row="1" Grid.Column="1" Style="{StaticResource OkButton}" Content="OK"
+                                        Command="{Binding KeyCommand}" CommandParameter="ok" ToolTip="Valider (ok)"/>
+                                <Button AutomationProperties.Name="Droite" Grid.Row="1" Grid.Column="2" Style="{StaticResource DPadButton}" Content="&#xE76C;"
+                                        Command="{Binding KeyCommand}" CommandParameter="right" ToolTip="Droite (right)"/>
+                                <Button AutomationProperties.Name="Bas" Grid.Row="2" Grid.Column="1" Style="{StaticResource DPadButton}" Content="&#xE70D;"
+                                        Command="{Binding KeyCommand}" CommandParameter="down" ToolTip="Bas (down)"/>
+                            </Grid>
+                        </Grid>
+                        <TextBlock Style="{StaticResource Caption}" Text="Navigation"/>
+
+                        <!-- Volume | Infos, Sous-titres, Menu, Quitter | Chaîne -->
+                        <Grid Margin="0,4,0,0" HorizontalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="24" Width="58"
+                                        PreviewMouseWheel="OnVolumeWheel"
+                                        ToolTip="Molette de la souris ici : volume. Ailleurs dans la fenêtre : Ctrl + molette.">
+                                    <StackPanel>
+                                        <Button AutomationProperties.Name="Volume +" Style="{StaticResource RockerButton}" Content="&#xE710;" Command="{Binding ChangeVolumeCommand}"
+                                                CommandParameter="up" ToolTip="Volume + (volume up)"/>
+                                        <TextBlock Text="{Binding Volume, TargetNullValue='—'}" HorizontalAlignment="Center"
+                                                   FontWeight="SemiBold" FontSize="15" ToolTip="Niveau de volume actuel"/>
+                                        <Button AutomationProperties.Name="Volume −" Style="{StaticResource RockerButton}" Content="&#xE738;" Command="{Binding ChangeVolumeCommand}"
+                                                CommandParameter="down" ToolTip="Volume − (volume down)"/>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Style="{StaticResource Caption}" Text="Volume"/>
+                            </StackPanel>
+                            <UniformGrid Grid.Column="1" Columns="2" Margin="10,0" VerticalAlignment="Center">
+                                <StackPanel Style="{StaticResource KeyCell}">
+                                    <Button AutomationProperties.Name="Infos" Style="{StaticResource RoundButton}" Content="&#xE946;" Command="{Binding KeyCommand}"
+                                            CommandParameter="info" ToolTip="Touche info"/>
+                                    <TextBlock Style="{StaticResource Caption}" Text="Infos"/>
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource KeyCell}">
+                                    <Button AutomationProperties.Name="Sous-titres" Style="{StaticResource RoundButton}" Content="&#xE7F0;" Command="{Binding KeyCommand}"
+                                            CommandParameter="subtitle" ToolTip="Touche subtitle"/>
+                                    <TextBlock Style="{StaticResource Caption}" Text="Sous-titres"/>
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource KeyCell}">
+                                    <Button AutomationProperties.Name="Menu" Style="{StaticResource RoundButton}" Content="&#xE700;" Command="{Binding KeyCommand}"
+                                            CommandParameter="menu" ToolTip="Touche menu"/>
+                                    <TextBlock Style="{StaticResource Caption}" Text="Menu"/>
+                                </StackPanel>
+                                <StackPanel Style="{StaticResource KeyCell}">
+                                    <Button AutomationProperties.Name="Quitter" Style="{StaticResource RoundButton}" Content="&#xE711;" Command="{Binding KeyCommand}"
+                                            CommandParameter="exit" ToolTip="Touche exit"/>
+                                    <TextBlock Style="{StaticResource Caption}" Text="Quitter"/>
+                                </StackPanel>
+                            </UniformGrid>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                <Border Background="{StaticResource SurfaceBrush}" CornerRadius="24" Width="58">
+                                    <StackPanel>
+                                        <Button AutomationProperties.Name="Chaîne +" Style="{StaticResource RockerButton}" Content="&#xE70E;" Command="{Binding KeyCommand}"
+                                                CommandParameter="channelup" ToolTip="Chaîne suivante (channelup)"/>
+                                        <TextBlock Text="CH" HorizontalAlignment="Center" FontWeight="SemiBold" FontSize="15"/>
+                                        <Button AutomationProperties.Name="Chaîne −" Style="{StaticResource RockerButton}" Content="&#xE70D;" Command="{Binding KeyCommand}"
+                                                CommandParameter="channeldown" ToolTip="Chaîne précédente (channeldown)"/>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Style="{StaticResource Caption}" Text="Chaîne"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Lecture -->
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="LECTURE" Margin="2,8,0,4"/>
+                        <UniformGrid Columns="5">
+                            <StackPanel>
+                                <Button AutomationProperties.Name="Rembobiner" Style="{StaticResource IconButton}" Content="&#xEB9E;" Command="{Binding KeyCommand}"
+                                        CommandParameter="back" ToolTip="Touche back (KEY_BACK)"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Rembobiner"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <Button AutomationProperties.Name="Lecture" Style="{StaticResource IconButton}" Content="&#xE768;" Command="{Binding KeyCommand}"
+                                        CommandParameter="play" ToolTip="Touche play"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Lecture"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <Button AutomationProperties.Name="Pause" Style="{StaticResource IconButton}" Content="&#xE769;" Command="{Binding KeyCommand}"
+                                        CommandParameter="pause" ToolTip="Touche pause"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Pause"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <Button AutomationProperties.Name="Stop" Style="{StaticResource IconButton}" Content="&#xE71A;" Command="{Binding KeyCommand}"
+                                        CommandParameter="stop" ToolTip="Touche stop"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Stop"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <Button AutomationProperties.Name="Avance rapide" Style="{StaticResource IconButton}" Content="&#xEB9D;" Command="{Binding KeyCommand}"
+                                        CommandParameter="forwards" ToolTip="Touche forwards"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Avance rapide"/>
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <!-- Couleurs -->
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="TOUCHES DE COULEUR" Margin="2,6,0,2"/>
+                        <UniformGrid Columns="4">
+                            <StackPanel>
+                                <Button AutomationProperties.Name="Rouge" Style="{StaticResource ColorKey}" Background="#E5484D" Command="{Binding KeyCommand}"
+                                        CommandParameter="red" ToolTip="Touche red"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Rouge"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <Button AutomationProperties.Name="Vert" Style="{StaticResource ColorKey}" Background="#3DD68C" Command="{Binding KeyCommand}"
+                                        CommandParameter="green" ToolTip="Touche green"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Vert"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <Button AutomationProperties.Name="Jaune" Style="{StaticResource ColorKey}" Background="#F5D90A" Command="{Binding KeyCommand}"
+                                        CommandParameter="yellow" ToolTip="Touche yellow"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Jaune"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <Button AutomationProperties.Name="Bleu" Style="{StaticResource ColorKey}" Background="#3D8BFF" Command="{Binding KeyCommand}"
+                                        CommandParameter="blue" ToolTip="Touche blue"/>
+                                <TextBlock Style="{StaticResource Caption}" Text="Bleu"/>
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <!-- Pavé numérique -->
+                        <Expander Header="Pavé numérique" Margin="0,6,0,0">
+                            <ItemsControl ItemsSource="{Binding DigitKeys}" Margin="0,6,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><UniformGrid Columns="3"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:KeyItem}">
+                                        <Button Style="{StaticResource SmallButton}" Content="{Binding Label}" FontSize="15"
+                                                Command="{Binding DataContext.KeyCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding Key}" ToolTip="{Binding Key}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Expander>
+
+                        <!-- Autres touches -->
+                        <Expander Header="Plus de touches" Margin="0,6,0,0">
+                            <ItemsControl ItemsSource="{Binding ExtraKeys}" Margin="0,6,0,0">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:KeyItem}">
+                                        <Button Style="{StaticResource SmallButton}" Content="{Binding Label}"
+                                                Command="{Binding DataContext.KeyCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding Key}" ToolTip="{Binding Key}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Expander>
+
+                        <!-- Alimentation -->
+                        <Expander Header="Alimentation" Margin="0,6,0,0">
+                            <UniformGrid Columns="3" Margin="0,6,0,0">
+                                <Button AutomationProperties.Name="Allumer" Style="{StaticResource SmallButton}" Content="Allumer" Command="{Binding PowerCommand}"
+                                        CommandParameter="on" ToolTip="Réveil réseau puis allumage (on)"/>
+                                <Button AutomationProperties.Name="Éteindre" Style="{StaticResource SmallButton}" Content="Éteindre" Command="{Binding PowerCommand}"
+                                        CommandParameter="off" ToolTip="Éteint seulement si la TV est allumée (off)"/>
+                                <Button AutomationProperties.Name="Réveil réseau" Style="{StaticResource SmallButton}" Content="Réveil réseau" Command="{Binding PowerCommand}"
+                                        CommandParameter="wake" ToolTip="Paquet Wake-on-LAN (wake)"/>
+                            </UniformGrid>
+                        </Expander>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- ===================== Apps et sources ===================== -->
+            <Border Grid.Column="2" Style="{StaticResource Panel}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" AutomationProperties.Name="Actualiser les applications" Style="{StaticResource SmallButton}" Command="{Binding RefreshAppsCommand}"
+                                ToolTip="Relire la liste des applications installées sur la TV">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE72C;" FontSize="13" Margin="0,0,6,0"/>
+                                <TextBlock Text="Actualiser les applications"/>
+                            </StackPanel>
+                        </Button>
+                        <TextBlock Text="Applications" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </DockPanel>
+
+                    <ScrollViewer Grid.Row="1" Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding Apps}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:AppTile}">
+                                    <Button Style="{StaticResource AppTileButton}" AutomationProperties.Name="{Binding Name}" ToolTip="{Binding Name, StringFormat='Lancer {0}'}"
+                                            Command="{Binding DataContext.LaunchAppCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}">
+                                        <Grid>
+                                            <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                            <Border Width="60" Height="60" CornerRadius="12" Background="White">
+                                                <Grid>
+                                                    <TextBlock Text="{Binding Initial}" FontSize="26" FontWeight="Bold"
+                                                               Foreground="{StaticResource BgBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    <Image Source="{Binding IconPath, TargetNullValue={x:Null}}" Stretch="Uniform"
+                                                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                </Grid>
+                                            </Border>
+                                            <TextBlock Grid.Row="1" Text="{Binding Name}" FontSize="12" Margin="0,6,0,0"
+                                                       TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" MaxWidth="96"/>
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <DockPanel Grid.Row="2" Margin="0,12,0,6">
+                        <Button DockPanel.Dock="Right" AutomationProperties.Name="Actualiser les sources" Style="{StaticResource SmallButton}" Command="{Binding RefreshSourcesCommand}"
+                                ToolTip="Relire la liste des entrées de la TV">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE72C;" FontSize="13" Margin="0,0,6,0"/>
+                                <TextBlock Text="Actualiser les sources"/>
+                            </StackPanel>
+                        </Button>
+                        <TextBlock Text="Sources" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </DockPanel>
+                    <ItemsControl Grid.Row="3" ItemsSource="{Binding Sources}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:SourceTile}">
+                                <Button Style="{StaticResource PillButton}" AutomationProperties.Name="{Binding Label}" Content="{Binding Label}"
+                                        ToolTip="{Binding Id, StringFormat='Passer sur l''entrée {0}'}"
+                                        Command="{Binding DataContext.SelectSourceCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ===================== Barre d'état ===================== -->
+        <DockPanel Grid.Row="2" Margin="2,12,2,0">
+            <ProgressBar DockPanel.Dock="Right" Width="90" Height="4" IsIndeterminate="True"
+                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}"/>
+            <TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" FontSize="12">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LastFailed}" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </DockPanel>
+    </Grid>
+</Window>
