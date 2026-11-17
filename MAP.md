@@ -8,14 +8,16 @@ chercher ailleurs.
 
 | Fichier | Contenu | Où ranger une nouvelle info de ce type |
 |---|---|---|
-| `CLAUDE.md` | Qui travaille sur ce projet, comment, règles à respecter. **En attente de remplissage (5 questions).** | Règles de collaboration générales, non techniques |
+| `CLAUDE.md` | Règles à respecter (sessions en parallèle, secrets) — en vigueur ; « qui / quoi / comment » encore à remplir (5 questions). | Règles de collaboration générales, non techniques |
+| `SESSIONS.md` | Zones réservées par les sessions en cours (règle dans `CLAUDE.md`). | Réserver/libérer sa zone avant/après une session |
 | `CLAUDE.local.md` | Détails techniques propres à cette machine (certificat, base, TV de test). | Toute info technique spécifique à ce poste, non partageable |
 | `SPEC.md` | Ce qu'on veut obtenir : objectif, architecture, fonctionnalités de l'app WPF. | Exigences fonctionnelles, périmètre |
 | `PLAN.md` | Les étapes de réalisation, à cocher. | Avancement, prochaines étapes |
 | `MAP.md` | Ce fichier. | — |
 | `README.md` | Présentation rapide du dossier. | — |
 | `THIRD-PARTY-NOTICES.md` | Licences tierces (pyvidaa porté en C#, MQTTnet) ; certificat VIDAA non distribué. Copié à côté de l'exe. | Toute nouvelle dépendance ou code repris |
-| `.gitignore` | Exclusions Git (dont `.env`, `CLAUDE.local.md` et la base `*.db`). | Nouvelle exclusion si un outil ajoute des fichiers à ignorer |
+| `.gitignore` | Exclusions Git : secrets (`.env`), certificats et clés, APK VIDAA (`sources/`), base, journaux, notes locales. | Nouvelle exclusion si un outil ajoute des fichiers à ignorer |
+| `.gitattributes` | Normalisation des fins de ligne entre appareils. | — |
 | `.env` | Secrets réels (mot de passe PKCS12 du certificat VIDAA, `VIDAA_P12_PASSWORD`). **Jamais committé.** | Tout secret/clé réelle |
 | `.env.example` | Modèle des variables attendues, sans valeurs. | Nouvelle variable d'environnement (déclarer ici sans sa valeur) |
 
@@ -89,10 +91,12 @@ Vide pour l'instant (hormis son `README.md` explicatif).
 
 ## Éléments volontairement absents aujourd'hui
 
-Pour rester léger et ne créer que ce qui sert : pas encore de `AGENTS.md`
-(un seul interlocuteur, pas de multi-agents), pas de `.mcp.json` (aucun
-outil MCP spécifique identifié pour ce repo), pas de `.worktreeinclude`
-(pas d'usage de worktrees parallèles), pas de `docs/` (le contenu envisagé tient pour
+Le projet est versionné avec Git depuis le 17/11/2026 (dépôt privé GitHub
+`DAGONet261/hisense-tv-remote`) ; les sessions parallèles utilisent des
+`git worktree` (règle dans `CLAUDE.md`). Pour rester léger : pas encore de
+`AGENTS.md`, pas de `.mcp.json` (aucun outil MCP spécifique identifié), pas de
+`.worktreeinclude` (rien d'ignoré à recopier dans un worktree : `.env` et le
+certificat se recopient à la main), pas de `docs/` (le contenu envisagé tient pour
 l'instant dans `contexte/` et `SPEC.md`), pas de `.github/workflows/`
 (pas de CI/CD pour une app de bureau développée et testée manuellement).
 Ces éléments seront ajoutés — et documentés ici — dès qu'un besoin réel

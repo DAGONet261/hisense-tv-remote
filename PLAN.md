@@ -51,6 +51,9 @@ l'avancement (par toi, ou par Claude Code dans Visual Studio).
   - [ ] Retours de l'utilisateur sur la nouvelle interface
 - [x] **Python retiré de l'application** (17/11) : moteur C# seul, certificat
       importable depuis le `.p12` dans l'app, tests sur faux moteur en mémoire
+- [ ] Lire le certificat client directement dans le **magasin de certificats
+      Windows** (l'utilisateur l'y a importé le 17/11) : plus aucun fichier de
+      clé sur le disque ; garder l'import `.p12` comme alternative
 - [ ] Setup (installeur) et versionnage de l'application — certificat à
       importer au premier lancement, jamais embarqué (voir
       `contexte/certificat-client.md`)
