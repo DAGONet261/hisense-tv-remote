@@ -77,9 +77,9 @@ proprement depuis le retrait de Python (17/11).
   `{"text": "…", "action": "insert|replace|clear"}` sur
   `/remoteapp/tv/platform_service/{client}/actions/txtinputdata` **et**
   `…/actions/bwsinputdata` (repris de stevene1919/hisense_vidaa, MIT).
-  **Sans effet dans YouTube sur la 55A53FXVT** (17/11). L'analyse de
-  protocole de pyvidaa pense que ces sujets sont des notifications TV → app.
-  Format réel à trouver dans l'APK VIDAA.
+  **Sans effet sur la 55A53FXVT** (17/11) : ces sujets sont des annonces
+  TV → app (format réel `input_data` / `inputdata`), et 175 variantes
+  d'envoi ont été refusées. Détail et pistes : `saisie-texte.md`.
 - **Abonnements joker refusés** : `#` et `/remoteapp/#` → refusés par la
   TV ; impossible d'observer ce que publie l'app officielle du téléphone.
 - **Souris** : aucun projet connu (pyvidaa, hisense_vidaa) n'envoie de
