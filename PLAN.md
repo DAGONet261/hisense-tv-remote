@@ -71,10 +71,10 @@ l'avancement (par toi, ou par Claude Code dans Visual Studio).
         lettres et symboles (Maj/Verr. Maj comme d'habitude) → saisie de texte
   - [ ] **Saisie de texte : ne fonctionne pas** (testé dans YouTube le 17/11).
         L'interface est prête (frappe instantanée à chaque lettre), mais le
-        message `txtinputdata`/`bwsinputdata` est probablement une
-        notification TV → app, pas une commande. Prochaine piste : lire les
-        sujets MQTT dans l'APK VIDAA (chaînes des `classes*.dex`) et/ou
-        écouter la TV (outil « Écouter la TV » de TV et réglages)
+        TV annonce le contenu des champs VIDAA et du navigateur (écoute du
+        17/11), mais refuse les 175 variantes d'envoi essayées ; APK chiffré.
+        Pistes : vérifier l'app VIDAA du téléphone, clavier à l'écran piloté,
+        lecture seule. Voir `contexte/saisie-texte.md`
   - [x] Raccourcis clavier (17/11) : flèches, Entrée = OK, Échap = Retour,
         Ctrl ± = zoom, volume, chaînes, couleurs, multimédia, F1 = aide ;
         validés sur la TV. Voir `contexte/interface.md`

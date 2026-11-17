@@ -62,6 +62,7 @@ chercher ailleurs.
 | `protocole-vidaa.md` | Détail technique du protocole MQTT local VIDAA reconstruit ce soir (ports, auth, appairage PIN, extraction du certificat). |
 | `decisions-implementation.md` | Choix techniques pris en autonomie pendant l'implémentation (première passe 16/11, validation réelle 17/11). |
 | `certificat-client.md` | Le certificat client VIDAA : durée de vie (2034), pourquoi il peut changer, pourquoi il ne va ni dans le dépôt ni dans le setup. |
+| `saisie-texte.md` | Saisie de texte à distance : annonces de la TV (formats `input_data`/`inputdata`), liste blanche des sujets, variantes refusées, pistes. |
 | `interface.md` | Refonte de l'interface : organisation, règles de nommage des boutons, logos fournis par la TV, architecture MVVM. |
 | `base-sqlite.md` | Base SQLite portable : emplacement, tables, chiffrement DPAPI des jetons, import, repli. |
 | `portage-natif-csharp.md` | Moteur natif C# : correspondance avec pyvidaa, mesures, améliorations, points d'attention. |

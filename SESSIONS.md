@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| Saisie de texte : notes d'écoute | `saisie-texte` | `contexte/saisie-texte.md` (nouveau), `contexte/portage-natif-csharp.md` | 2026-11-17 17:35 | Claude (session principale) |
+| _(aucune session en cours)_ | | | | |
