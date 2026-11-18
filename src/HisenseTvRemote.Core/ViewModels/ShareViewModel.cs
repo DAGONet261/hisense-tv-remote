@@ -6,7 +6,7 @@ using HisenseTvRemote.Core.Dlna;
 
 namespace HisenseTvRemote.Core.ViewModels;
 
-/// <summary>Préparation d'une vidéo (TS, MKV…) avant l'envoi : la TV n'accepte qu'un MP4 complet.</summary>
+/// <summary>Préparation d'une vidéo (TS, AVI…) avant l'envoi : la TV n'accepte qu'un MP4 complet.</summary>
 public enum PrepareState { None, Queued, Preparing, Ready, Failed }
 
 /// <summary>Un fichier de la liste de partage.</summary>
@@ -81,7 +81,7 @@ public sealed partial class ShareItem(string path, MediaType type) : ObservableO
 /// Le lecteur est créé au premier envoi (<paramref name="playerFactory"/>) ; les photos passent par
 /// <paramref name="preparePhoto"/> (conversion HEIC, orientation, taille) avant l'envoi. La durée des
 /// vidéos vient de <paramref name="durationOf"/> : la 55A53FXVT renvoie toujours 0 (TrackDuration).
-/// Les vidéos TS, MKV, AVI… passent par <paramref name="prepareVideo"/> (conversion en MP4, progression).
+/// Les vidéos TS, AVI… passent par <paramref name="prepareVideo"/> (conversion en MP4, progression).
 /// </summary>
 public sealed partial class ShareViewModel(
     Func<IMediaPlayer> playerFactory,
@@ -138,7 +138,7 @@ public sealed partial class ShareViewModel(
     [ObservableProperty]
     private bool _isPlaying;
 
-    /// <summary>Conversion en cours avant l'envoi (TS, MKV…) ; <see cref="PrepareProgress"/> de 0 à 1.</summary>
+    /// <summary>Conversion en cours avant l'envoi (TS, AVI…) ; <see cref="PrepareProgress"/> de 0 à 1.</summary>
     [ObservableProperty]
     private bool _isPreparing;
 
@@ -194,7 +194,7 @@ public sealed partial class ShareViewModel(
     /// <summary>Ajoute les fichiers pris en charge (les dossiers : leurs fichiers, triés par nom). Renvoie (ajoutés, ignorés).</summary>
     public (int Added, int Ignored) Add(IEnumerable<string> paths)
     {
-        int added = 0, ignored = 0;
+        int added = 0, ignored = 0, unsupported = 0;
         foreach (var p in paths)
         {
             if (Directory.Exists(p))
@@ -203,6 +203,7 @@ public sealed partial class ShareViewModel(
                 added += a; ignored += i;
                 continue;
             }
+            if (MediaTypes.Unsupported.Contains(Path.GetExtension(p))) { unsupported++; ignored++; continue; }
             var type = MediaTypes.Of(p);
             if (type is null || !File.Exists(p)) { ignored++; continue; }
             if (Items.Any(x => string.Equals(x.Path, p, StringComparison.OrdinalIgnoreCase))) continue;
@@ -212,7 +213,9 @@ public sealed partial class ShareViewModel(
             added++;
         }
         OnPropertyChanged(nameof(HasItems));
-        if (added > 0 || ignored > 0)
+        if (unsupported > 0)
+            Report($"{(added > 0 ? $"{added} fichier(s) ajouté(s). " : "")}Les fichiers MKV ne sont pas pris en charge : utilisez une vidéo MP4 ou TS.", true);
+        else if (added > 0 || ignored > 0)
             Report(ignored == 0 ? $"{added} fichier(s) ajouté(s). Double-cliquez sur un fichier pour l'envoyer à la TV."
                 : $"{added} fichier(s) ajouté(s), {ignored} ignoré(s) (format non pris en charge).", false);
         Selected ??= Items.FirstOrDefault();

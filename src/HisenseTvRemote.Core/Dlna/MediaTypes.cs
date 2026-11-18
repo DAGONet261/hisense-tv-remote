@@ -36,7 +36,7 @@ public static class MediaTypes
         [".png"] = new("image/png", MediaKind.Photo), [".gif"] = new("image/gif", MediaKind.Photo),
         [".bmp"] = new("image/x-ms-bmp", MediaKind.Photo),
         [".mp4"] = new("video/mp4", MediaKind.Video), [".m4v"] = new("video/m4v", MediaKind.Video),
-        [".mkv"] = new("video/x-matroska", MediaKind.Video), [".webm"] = new("video/webm", MediaKind.Video),
+        [".webm"] = new("video/webm", MediaKind.Video),
         [".avi"] = new("video/avi", MediaKind.Video), [".mov"] = new("video/quicktime", MediaKind.Video),
         [".mpg"] = new("video/mpeg", MediaKind.Video), [".mpeg"] = new("video/mpeg", MediaKind.Video),
         [".ts"] = new("video/mp2ts", MediaKind.Video), [".m2ts"] = new("video/m2ts", MediaKind.Video),
@@ -51,6 +51,13 @@ public static class MediaTypes
     /// <summary>Photos lisibles seulement après conversion en JPEG.</summary>
     public static readonly IReadOnlySet<string> ConvertiblePhotos =
         new HashSet<string>([".heic", ".heif", ".webp", ".tif", ".tiff", ".jxr", ".wdp"], StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Formats refusés avec un message (choix du 18/11) : les MKV sont souvent lourds (4K) et leur
+    /// préparation trop longue ; MP4 et TS suffisent.
+    /// </summary>
+    public static readonly IReadOnlySet<string> Unsupported =
+        new HashSet<string>([".mkv"], StringComparer.OrdinalIgnoreCase);
 
     public static MediaType? Of(string path) =>
         ByExtension.TryGetValue(Path.GetExtension(path), out var t) ? t

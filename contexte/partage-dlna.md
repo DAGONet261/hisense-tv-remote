@@ -78,6 +78,12 @@ le `moov` est à la fin).
   (AAC, MP3, AC3, E-AC3) ou converti en AAC (Opus, Vorbis, DTS…). Autre codec
   d'image : message clair (réencodage en direct possible plus tard : la build
   contient les encodeurs H.264 matériels Intel/NVIDIA/AMD/Windows).
+- **MKV refusés** (décision de l'utilisateur, 18/11) : message « utilisez une
+  vidéo MP4 ou TS » à l'ajout. Ils se lisaient pourtant après conversion
+  (≈ 2 min pour 3,3 Go en 4K) : pour les réactiver, retirer `.mkv` de
+  `MediaTypes.Unsupported` et le remettre dans la liste des extensions.
+  AVI, WMV, FLV : conversion gardée, **non vérifiée sur la TV** (pas de
+  fichier d'essai).
 - **Lire pendant la conversion : impossible avec cette TV** (essais du 18/11).
   Un flux sans taille (MP4 fragmenté ou MKV écrits au fil de l'eau) est
   refusé aussitôt ; avec une taille annoncée, la TV va d'abord lire la **fin

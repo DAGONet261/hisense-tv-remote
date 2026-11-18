@@ -23,7 +23,7 @@
   </PropertyGroup>
 
   <!--
-    FFmpeg (LGPL) : conversion des vidéos TS, MKV, AVI… avant le partage vers la TV. Récupéré par
+    FFmpeg (LGPL) : conversion des vidéos TS, AVI… avant le partage vers la TV. Récupéré par
     build/Get-FFmpeg.ps1 dans third_party/ffmpeg (non versionné), copié dans ffmpeg/ à côté de l'exe.
   -->
   <ItemGroup Condition="'$(MSBuildProjectName)' == 'HisenseTvRemote' And Exists('$(MSBuildThisFileDirectory)..\third_party\ffmpeg\ffmpeg.exe')">

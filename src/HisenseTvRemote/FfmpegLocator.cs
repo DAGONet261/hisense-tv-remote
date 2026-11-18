@@ -4,7 +4,7 @@ namespace HisenseTvRemote;
 
 /// <summary>
 /// FFmpeg livré avec l'application (dossier <c>ffmpeg\</c> à côté de l'exe, copié par la compilation et
-/// l'installeur), sinon celui du PATH. Sans FFmpeg, les TS/MKV/AVI partent tels quels (souvent refusés).
+/// l'installeur), sinon celui du PATH. Sans FFmpeg, les TS/AVI partent tels quels (souvent refusés).
 /// </summary>
 public static class FfmpegLocator
 {

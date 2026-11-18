@@ -118,7 +118,7 @@
 
         <!-- ===================== Barre d'état ===================== -->
         <DockPanel DockPanel.Dock="Bottom" Margin="2,10,2,0">
-            <!-- Préparation d'une vidéo (TS, MKV…) : progression réelle ; sinon, simple indicateur d'activité. -->
+            <!-- Préparation d'une vidéo (TS, AVI…) : progression réelle ; sinon, simple indicateur d'activité. -->
             <ProgressBar DockPanel.Dock="Right" Width="140" Height="6" Minimum="0" Maximum="1" Value="{Binding PrepareProgress}"
                          Visibility="{Binding IsPreparing, Converter={StaticResource BoolToVisibility}}"/>
             <ProgressBar DockPanel.Dock="Right" Width="90" Height="4" IsIndeterminate="True">
@@ -276,7 +276,7 @@
                                 <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="11" TextTrimming="CharacterEllipsis">
                                     <Run Text="{Binding KindLabel, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding SizeText, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding Path, Mode=OneWay}"/>
                                 </TextBlock>
-                                <!-- Vidéos TS, MKV… : état de la préparation pour la TV (commencée dès l'ajout). -->
+                                <!-- Vidéos TS, AVI… : état de la préparation pour la TV (commencée dès l'ajout). -->
                                 <TextBlock Text="{Binding PrepareText}" FontSize="11" Margin="0,1,0,0">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">

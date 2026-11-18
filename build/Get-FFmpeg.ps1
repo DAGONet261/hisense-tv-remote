@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    Récupère FFmpeg (LGPL) pour l'application : conversion des vidéos TS, MKV, AVI… en MP4 avant le
+    Récupère FFmpeg (LGPL) pour l'application : conversion des vidéos TS, AVI… en MP4 avant le
     partage vers la TV. Copié dans third_party\ffmpeg\ (non versionné), puis à côté de l'exe.
 
 .DESCRIPTION

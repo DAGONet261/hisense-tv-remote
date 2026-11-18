@@ -8,7 +8,7 @@ namespace HisenseTvRemote.Core.Dlna;
 public sealed record VideoProbe(string? VideoCodec, string? AudioCodec);
 
 /// <summary>
-/// Change l'enveloppe des vidéos que la TV refuse (TS, MKV, AVI, WMV, FLV…) en MP4, avant l'envoi, avec
+/// Change l'enveloppe des vidéos que la TV refuse (TS, AVI, WMV, FLV…) en MP4, avant l'envoi, avec
 /// FFmpeg : image recopiée telle quelle (pas de perte), son recopié ou converti en AAC.
 /// <para>
 /// Pourquoi (mesuré sur la 55A53FXVT, 18/11) : un TS (H.264 864×488, pixels non carrés) et un MKV (VP9 4K

@@ -30,7 +30,9 @@ public class DlnaTests : IDisposable
         Assert.Equal(new MediaType("image/jpeg", MediaKind.Photo), MediaTypes.Of(@"C:\x\Photo.JPG"));
         Assert.Equal(MediaKind.Photo, MediaTypes.Of("iphone.heic")!.Kind);                    // converti en JPEG
         Assert.Equal("image/jpeg", MediaTypes.Of("iphone.heic")!.Mime);
-        Assert.Equal(new MediaType("video/x-matroska", MediaKind.Video), MediaTypes.Of("film.mkv"));
+        Assert.Equal(new MediaType("video/mp2ts", MediaKind.Video), MediaTypes.Of("film.ts"));
+        Assert.Null(MediaTypes.Of("film.mkv"));                                                   // MKV refusé (choix du 18/11)
+        Assert.DoesNotContain("*.mkv", MediaTypes.OpenFileFilter);
         Assert.Equal(MediaKind.Audio, MediaTypes.Of("chanson.flac")!.Kind);
         Assert.Null(MediaTypes.Of("notes.txt"));
 
@@ -209,6 +211,9 @@ public class DlnaTests : IDisposable
     public async Task Liste_suivant_precedent_et_conversion_des_photos()
     {
         var (vm, player, _) = NewVm();
+        Assert.Equal((0, 1), vm.Add([File("film.mkv")]));
+        Assert.Contains("MKV ne sont pas pris en charge : utilisez une vidéo MP4 ou TS", vm.Status);
+        Assert.True(vm.LastFailed);
         var (added, ignored) = vm.Add([File("a.jpg"), File("b.heic"), File("c.mp4"), File("notes.txt"), Path.Combine(_dir, "absent.jpg")]);
         Assert.Equal((3, 2), (added, ignored));
         Assert.Equal((0, 0), vm.Add([Path.Combine(_dir, "a.jpg")]));                               // pas de doublon
@@ -232,7 +237,7 @@ public class DlnaTests : IDisposable
     public async Task Avance_recul_bornes_a_la_video()
     {
         var (vm, player, _) = NewVm();
-        vm.Add([File("film.mkv")]);
+        vm.Add([File("film.mp4")]);
         await vm.ShowSelectedAsync();
         player.Info = new PlaybackInfo("PLAYING", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(100));
         await vm.SeekByAsync(-10);
@@ -364,7 +369,8 @@ public class DlnaTests : IDisposable
     public void Conversion_choix_des_pistes_et_des_codecs()
     {
         Assert.True(VideoRemuxer.NeedsRemux("film.ts"));
-        Assert.True(VideoRemuxer.NeedsRemux("film.MKV"));
+        Assert.True(VideoRemuxer.NeedsRemux("film.WMV"));
+        Assert.False(VideoRemuxer.NeedsRemux("film.mkv"));                                         // refusé à l'ajout
         Assert.True(VideoRemuxer.NeedsRemux("film.avi"));
         Assert.False(VideoRemuxer.NeedsRemux("film.mp4"));                                         // réorganisé à la volée
         Assert.False(VideoRemuxer.NeedsRemux("photo.jpg"));
@@ -419,7 +425,7 @@ public class DlnaTests : IDisposable
         void Release(string name) { lock (gates) gates[name].SetResult(); }
         bool Started(string name) { lock (gates) return gates.ContainsKey(name); }
 
-        vm.Add([File("a.ts"), File("b.mkv"), File("c.mp4"), File("d.avi")]);
+        vm.Add([File("a.ts"), File("b.wmv"), File("c.mp4"), File("d.avi")]);
         await WaitFor(() => Started("a.ts"));
         Assert.Equal(PrepareState.Preparing, vm.Items[0].PrepareState);                           // dès l'ajout
         Assert.Equal(PrepareState.Queued, vm.Items[1].PrepareState);                               // une à la fois
@@ -427,7 +433,7 @@ public class DlnaTests : IDisposable
         Assert.Equal("En attente de préparation pour la TV", vm.Items[1].PrepareText);
         await WaitFor(() => vm.Items[0].PrepareText == "Préparation pour la TV… 50 %");
 
-        // Lecture de d.avi demandée pendant la préparation de a.ts : d.avi passe avant b.mkv.
+        // Lecture de d.avi demandée pendant la préparation de a.ts : d.avi passe avant b.wmv.
         var show = vm.ShowAsync(vm.Items[3]);
         await WaitFor(() => vm.IsPreparing);
         Release("a.ts");
@@ -442,8 +448,8 @@ public class DlnaTests : IDisposable
         await vm.ShowAsync(vm.Items[0]);                                                           // déjà prête : immédiat
         Assert.Equal("show a.ts.mp4 Video", player.Calls[^1]);
 
-        // b.mkv : Stop arrête l'attente, pas la préparation ; la retirer de la liste l'annule.
-        await WaitFor(() => Started("b.mkv"));
+        // b.wmv : Stop arrête l'attente, pas la préparation ; la retirer de la liste l'annule.
+        await WaitFor(() => Started("b.wmv"));
         var b = vm.Items[1];
         var wait = vm.ShowAsync(b);
         await WaitFor(() => vm.IsPreparing);
@@ -463,7 +469,7 @@ public class DlnaTests : IDisposable
         var player = new FakePlayer();
         var vm = new ShareViewModel(() => player, null, null, null,
             (_, _, _, _) => Task.FromException<string>(new NotSupportedException("format d'image « av1 » non lu par la TV.")));
-        vm.Add([File("film.mkv")]);
+        vm.Add([File("film.avi")]);
         await WaitFor(() => vm.Items[0].PrepareState == PrepareState.Failed);
         Assert.Equal("Préparation impossible : format d'image « av1 » non lu par la TV", vm.Items[0].PrepareText);
         await vm.ShowAsync(vm.Items[0]);                                                           // nouvel essai, même échec
