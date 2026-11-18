@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| Pare-feu à l'installation | `pare-feu-setup` | `installer/VidaaHisense.iss`, `src/HisenseTvRemote/FirewallHelper.cs`, `src/HisenseTvRemote/ShareWindow.xaml(.cs)`, `contexte/partage-dlna.md`, `CHANGELOG.md` | 2026-11-18 | Claude (session principale) |
+| _(aucune session en cours)_ | | | | |
