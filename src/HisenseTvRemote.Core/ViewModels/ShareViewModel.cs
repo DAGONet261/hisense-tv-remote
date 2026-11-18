@@ -105,6 +105,10 @@ public sealed partial class ShareViewModel(
     [NotifyPropertyChangedFor(nameof(DurationText), nameof(CanSeekBar))]
     private double _durationSeconds;
 
+    /// <summary>Partie déjà chargée par la TV (secondes), en avance sur la lecture : couche claire de la barre.</summary>
+    [ObservableProperty]
+    private double _bufferedSeconds;
+
     /// <summary>L'utilisateur fait glisser la barre : la position de la TV n'est plus recopiée.</summary>
     public bool IsDragging { get; set; }
 
@@ -202,6 +206,7 @@ public sealed partial class ShareViewModel(
             PositionText = "";
             PositionSeconds = 0;
             DurationSeconds = 0;
+            BufferedSeconds = 0;
             _sawPlaying = false;
             _userStopped = false;
             _displayedAt = null;
@@ -348,6 +353,8 @@ public sealed partial class ShareViewModel(
                 PositionSeconds = info.Position?.TotalSeconds ?? 0;
             }
             if (IsMedia && info.Duration is { } d && d > TimeSpan.Zero) DurationSeconds = d.TotalSeconds;
+            if (IsMedia && _player.BufferedUntil(TimeSpan.FromSeconds(PositionSeconds), info.Duration) is { } loaded)
+                BufferedSeconds = Math.Max(PositionSeconds, Math.Min(loaded.TotalSeconds, DurationSeconds > 0 ? DurationSeconds : loaded.TotalSeconds));
 
             // Fin d'une vidéo/musique (et pas un Stop demandé) : fichier suivant, s'il y en a un.
             if (IsMedia && _sawPlaying && info.IsStopped && !_userStopped)

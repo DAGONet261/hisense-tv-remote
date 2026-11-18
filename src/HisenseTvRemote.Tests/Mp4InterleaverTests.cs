@@ -215,6 +215,13 @@ public class Mp4InterleaverTests : IDisposable
             at += e.Length;
         }
         Assert.Equal(view.Length, served.Length);
+
+        // Octets ↔ temps exacts : le PCM de 0,03 s (3e bloc d'échantillons : 0,05 s) est au-delà de l'en-tête.
+        Assert.Equal(TimeSpan.Zero, view.TimeAt(0, null));
+        Assert.Equal(view.HeaderLength, view.ByteAt(TimeSpan.Zero, null));
+        var at40ms = view.ByteAt(TimeSpan.FromMilliseconds(40), null);                             // son n° 2 (40 ms)
+        Assert.Equal(TimeSpan.FromMilliseconds(40), view.TimeAt(at40ms, null));
+        Assert.True(at40ms > view.HeaderLength);
     }
 
     [Fact]

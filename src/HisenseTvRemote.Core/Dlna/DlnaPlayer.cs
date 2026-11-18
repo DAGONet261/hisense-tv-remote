@@ -15,6 +15,12 @@ public interface IMediaPlayer : IAsyncDisposable
 
     /// <summary>La TV a téléchargé (une partie d') un fichier servi. Peut venir d'un autre thread.</summary>
     event Action<string>? RequestServed;
+
+    /// <summary>
+    /// Jusqu'où la TV a déjà chargé le fichier en cours, à partir de <paramref name="position"/>
+    /// (partie claire de la barre de progression) ; null si inconnu.
+    /// </summary>
+    TimeSpan? BufferedUntil(TimeSpan position, TimeSpan? duration);
 }
 
 /// <summary>
@@ -27,6 +33,7 @@ public sealed class DlnaPlayer(IPAddress tv, HttpClient http) : IMediaPlayer
     private const int KeepPublished = 3;
 
     private readonly Queue<string> _published = new();
+    private MediaContent? _current;
     private DlnaRenderer? _renderer;
     private MediaHttpServer? _server;
 
@@ -48,7 +55,9 @@ public sealed class DlnaPlayer(IPAddress tv, HttpClient http) : IMediaPlayer
     public async Task ShowAsync(string path, MediaType type, string title, CancellationToken ct = default)
     {
         var renderer = await RendererAsync(ct).ConfigureAwait(false);
-        var url = _server!.Publish(await ContentForAsync(path, type).ConfigureAwait(false), type);
+        var content = await ContentForAsync(path, type).ConfigureAwait(false);
+        var url = _server!.Publish(content, type);
+        _current = content;
         _published.Enqueue(url);
         while (_published.Count > KeepPublished) _server.Unpublish(_published.Dequeue());
         try { await renderer.SetUriAsync(url, title, type, ct).ConfigureAwait(false); }
@@ -85,6 +94,13 @@ public sealed class DlnaPlayer(IPAddress tv, HttpClient http) : IMediaPlayer
         await (await RendererAsync(ct).ConfigureAwait(false)).SeekAsync(position, ct).ConfigureAwait(false);
     public async Task<PlaybackInfo> GetInfoAsync(CancellationToken ct = default) =>
         await (await RendererAsync(ct).ConfigureAwait(false)).GetInfoAsync(ct).ConfigureAwait(false);
+
+    public TimeSpan? BufferedUntil(TimeSpan position, TimeSpan? duration)
+    {
+        if (_current is not { } c || _server is null) return null;
+        var end = _server.SentRanges(c).ContiguousEnd(c.ByteAt(position, duration));
+        return c.TimeAt(end, duration);
+    }
 
     public async ValueTask DisposeAsync()
     {

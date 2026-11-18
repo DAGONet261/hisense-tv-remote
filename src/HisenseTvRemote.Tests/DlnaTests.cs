@@ -173,7 +173,9 @@ public class DlnaTests : IDisposable
 
         /// <summary>Faux : la TV télécharge le fichier dès l'envoi (sauf si <see cref="Blocked"/>).</summary>
         public bool Blocked { get; set; }
+        public TimeSpan? Loaded { get; set; }
         public event Action<string>? RequestServed;
+        public TimeSpan? BufferedUntil(TimeSpan position, TimeSpan? duration) => Loaded;
 
         public Task ShowAsync(string path, MediaType type, string title, CancellationToken ct = default)
         {
@@ -273,6 +275,33 @@ public class DlnaTests : IDisposable
 
         await vm.SeekToAsync(99999);                                                               // au-delà de la fin
         Assert.Equal("seek 00:55:59", player.Calls[^1]);
+
+        // Partie chargée : jamais avant la position, jamais après la fin.
+        player.Loaded = TimeSpan.FromSeconds(1900);
+        advance(t = t.AddSeconds(3)); await vm.TickAsync();
+        Assert.Equal(1900d, vm.BufferedSeconds);
+        player.Loaded = TimeSpan.FromHours(5);
+        advance(t = t.AddSeconds(2)); await vm.TickAsync();
+        Assert.Equal(3360d, vm.BufferedSeconds);
+    }
+
+    [Fact]
+    public void Plages_envoyees_et_partie_chargee()
+    {
+        var r = new ByteRanges();
+        r.Add(0, 100);
+        r.Add(300, 400);
+        r.Add(100, 150);                                                                           // accolée : fusion
+        Assert.Equal(150, r.ContiguousEnd(10));
+        Assert.Equal(400, r.ContiguousEnd(350));
+        Assert.Equal(200, r.ContiguousEnd(200));                                                   // trou : rien d'avance
+        r.Add(140, 320);                                                                           // comble le trou
+        Assert.Equal(400, r.ContiguousEnd(0));
+
+        var file = new FileContent(File("v.mp4", 1000));                                           // estimation linéaire
+        Assert.Equal(500, file.ByteAt(TimeSpan.FromSeconds(50), TimeSpan.FromSeconds(100)));
+        Assert.Equal(TimeSpan.FromSeconds(25), file.TimeAt(250, TimeSpan.FromSeconds(100)));
+        Assert.Null(file.TimeAt(250, null));
     }
 
     [Fact]

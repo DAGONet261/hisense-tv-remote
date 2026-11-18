@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace HisenseTvRemote.Core.Dlna;
@@ -18,6 +19,10 @@ public sealed class MediaHttpServer : IAsyncDisposable
     private readonly TcpListener _listener;
     private readonly IReadOnlySet<IPAddress> _allowed;
     private readonly ConcurrentDictionary<string, (MediaContent Content, MediaType Type)> _files = new();
+    private readonly ConditionalWeakTable<MediaContent, ByteRanges> _sent = new();
+
+    /// <summary>Plages déjà envoyées à la TV pour ce contenu (partie « chargée »).</summary>
+    public ByteRanges SentRanges(MediaContent content) => _sent.GetValue(content, _ => new ByteRanges());
     private readonly CancellationTokenSource _stop = new();
     private readonly Task _loop;
 
@@ -156,6 +161,7 @@ public sealed class MediaHttpServer : IAsyncDisposable
             if (method == "HEAD") return;
 
             var buffer = new byte[128 * 1024];
+            var sent = SentRanges(file.Content);
             var position = start;
             var left = length;
             var watch = System.Diagnostics.Stopwatch.StartNew();
@@ -166,6 +172,7 @@ public sealed class MediaHttpServer : IAsyncDisposable
                     var n = await file.Content.ReadAsync(source, position, buffer.AsMemory(0, (int)Math.Min(buffer.Length, left)), ct).ConfigureAwait(false);
                     if (n == 0) break;
                     await stream.WriteAsync(buffer.AsMemory(0, n), ct).ConfigureAwait(false);
+                    sent.Add(position, position + n);
                     position += n;
                     left -= n;
                 }

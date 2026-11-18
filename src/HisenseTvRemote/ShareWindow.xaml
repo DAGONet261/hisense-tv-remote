@@ -21,6 +21,22 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <!-- Sous la barre : fond gris foncé, partie déjà chargée par la TV en gris clair. -->
+        <Style x:Key="BufferBar" TargetType="ProgressBar">
+            <Setter Property="Height" Value="5"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid>
+                            <Border x:Name="PART_Track" CornerRadius="2.5" Background="{StaticResource SurfaceHoverBrush}"/>
+                            <Border x:Name="PART_Indicator" CornerRadius="2.5" HorizontalAlignment="Left"
+                                    Background="{StaticResource MutedBrush}" Opacity="0.6"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="SeekBar" TargetType="Slider">
             <Setter Property="Focusable" Value="False"/>
             <Setter Property="IsMoveToPointEnabled" Value="True"/>
@@ -33,7 +49,7 @@
                                 <RepeatButton Style="{StaticResource SeekRepeat}" Background="{StaticResource AccentBrush}"/>
                             </Track.DecreaseRepeatButton>
                             <Track.IncreaseRepeatButton>
-                                <RepeatButton Style="{StaticResource SeekRepeat}" Background="{StaticResource SurfaceHoverBrush}"/>
+                                <RepeatButton Style="{StaticResource SeekRepeat}" Background="Transparent"/>
                             </Track.IncreaseRepeatButton>
                             <Track.Thumb>
                                 <Thumb>
@@ -127,11 +143,15 @@
                            VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
                 <TextBlock DockPanel.Dock="Right" Text="{Binding DurationText}" MinWidth="52" FontSize="12" TextAlignment="Right"
                            VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
-                <Slider x:Name="SeekBar" Style="{StaticResource SeekBar}" Margin="8,0" Minimum="0"
+                <Grid Margin="8,0">
+                <ProgressBar Style="{StaticResource BufferBar}" Margin="7,0" Minimum="0" Maximum="{Binding DurationSeconds}"
+                             Value="{Binding BufferedSeconds, Mode=OneWay}" ToolTip="Partie déjà chargée par la TV"/>
+                <Slider x:Name="SeekBar" Style="{StaticResource SeekBar}" Minimum="0"
                         Maximum="{Binding DurationSeconds}" Value="{Binding PositionSeconds}" IsEnabled="{Binding CanSeekBar}"
                         AutomationProperties.Name="Position dans la vidéo"
                         ToolTip="Cliquez ou faites glisser pour aller à un moment précis"
                         PreviewMouseLeftButtonDown="OnSeekBarDown" PreviewMouseLeftButtonUp="OnSeekBarUp" LostMouseCapture="OnSeekBarLostCapture"/>
+                </Grid>
             </DockPanel>
             <Grid>
                 <Grid.ColumnDefinitions>

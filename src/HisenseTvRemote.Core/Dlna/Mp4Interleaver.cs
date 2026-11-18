@@ -23,9 +23,11 @@ public sealed class InterleavedMp4 : MediaContent
     private readonly long[] _virtualStart;
     private readonly long[] _sourceOffset;
     private readonly int[] _size;
+    private readonly double[] _time;
 
-    internal InterleavedMp4(string path, byte[] header, long[] virtualStart, long[] sourceOffset, int[] size, long length) : base(path)
+    internal InterleavedMp4(string path, byte[] header, long[] virtualStart, long[] sourceOffset, int[] size, double[] time, long length) : base(path)
     {
+        _time = time;
         _header = header;
         _virtualStart = virtualStart;
         _sourceOffset = sourceOffset;
@@ -40,6 +42,26 @@ public sealed class InterleavedMp4 : MediaContent
 
     /// <summary>Nombre de morceaux (échantillons ou blocs) rangés dans le mdat.</summary>
     public int UnitCount => _size.Length;
+
+    /// <summary>Exact : les morceaux sont rangés par instant de début.</summary>
+    public override long ByteAt(TimeSpan time, TimeSpan? duration)
+    {
+        if (_virtualStart.Length == 0) return _header.Length;
+        var i = Array.BinarySearch(_time, time.TotalSeconds);
+        if (i < 0) i = Math.Max(0, ~i - 1);
+        while (i > 0 && _time[i - 1] == _time[i]) i--;                  // premier morceau de cet instant
+        return _virtualStart[i];
+    }
+
+    public override TimeSpan? TimeAt(long position, TimeSpan? duration)
+    {
+        if (_virtualStart.Length == 0) return null;
+        if (position <= _header.Length) return TimeSpan.Zero;
+        if (position >= Length) return duration ?? TimeSpan.FromSeconds(_time[^1]);
+        var i = Array.BinarySearch(_virtualStart, position);
+        if (i < 0) i = ~i - 1;
+        return TimeSpan.FromSeconds(_time[Math.Clamp(i, 0, _time.Length - 1)]);
+    }
 
     public override async ValueTask<int> ReadAsync(SafeFileHandle source, long position, Memory<byte> buffer, CancellationToken ct)
     {
@@ -158,8 +180,9 @@ public static class Mp4Interleaver
         var vStart = new long[all.Length];
         var src = new long[all.Length];
         var sizes = new int[all.Length];
-        for (var i = 0; i < all.Length; i++) { vStart[i] = dataStart + all[i].Relative; src[i] = all[i].Source; sizes[i] = all[i].Size; }
-        return new InterleavedMp4(path, header, vStart, src, sizes, dataStart + payload);
+        var times = new double[all.Length];
+        for (var i = 0; i < all.Length; i++) { vStart[i] = dataStart + all[i].Relative; src[i] = all[i].Source; sizes[i] = all[i].Size; times[i] = all[i].Time; }
+        return new InterleavedMp4(path, header, vStart, src, sizes, times, dataStart + payload);
     }
 
     // ---------- Réécriture du moov -------------------------------------------------------------
