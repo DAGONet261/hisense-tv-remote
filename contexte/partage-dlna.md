@@ -33,6 +33,39 @@ port 38400, formats acceptés).
   (pas après un Stop demandé).
 - Fermer la fenêtre arrête l'affichage sur la TV et le serveur local.
 
+## Vidéos MP4/MOV : réorganisées à la volée (18/11)
+
+**Symptôme** : vidéo de mariage (MP4 H.264 1080p30, ~10,8 Mbit/s = 1,35 Mo/s,
+4,6 Go) qui saccade avec des micro-chargements, alors que PC (1 Gbit/s) et TV
+sont en Ethernet.
+
+**Mesures** (relevé de chaque transfert du serveur, `TransferCompleted`) :
+le lecteur DLNA de la TV lit image et son **séparément** ; avec un MP4 rangé
+par gros blocs (~0,3 s d'image puis le son : 262 Ko / 13 Ko, typique d'un
+logiciel de montage), il revient sans cesse en arrière chercher le son, coupe
+et rouvre sa connexion (337 demandes en 2 min) et ne tire que **1,06 Mo/s**
+< 1,35 Mo/s requis → saccades. Le même contenu rangé finement (alternance
+image/son paquet par paquet, comme FFmpeg) : **26 Mo d'avance d'un coup à
+5 Mo/s**, puis 2,2-2,4 Mo/s, 95 demandes, sauts ±10/30 s immédiats — fluide
+(confirmé à l'œil). Format MPEG-TS : fluide aussi, mais reprise après un saut
+plus lente (2-4 s) → MP4 retenu.
+
+**Solution** (`Dlna/Mp4Interleaver.cs`, `MediaContent.cs`) : sans recopier le
+fichier, l'app sert une **vue réorganisée** : `ftyp` + `moov` réécrit (seules
+les tables d'emplacement `stco`/`co64` et `stsc` changent : un échantillon
+par bloc, rangés par ordre chronologique ; tailles, horodatages, images clés,
+codecs inchangés) + `mdat` virtuel dont chaque morceau est lu à sa place dans
+l'original. L'index est mis en tête (lecture immédiate, même pour un MP4 dont
+le `moov` est à la fin).
+- Vérifié sur le fichier réel : index recalculé en **0,7 s** (260 000
+  morceaux, en-tête 3,1 Mo) ; empreintes FFmpeg (`-f framemd5`) **identiques
+  paquet par paquet** à l'original sur les 5 premières minutes et de 50 min à
+  la fin (avec saut).
+- Pistes à taille fixe (PCM) : blocs d'origine conservés (sinon des millions
+  d'entrées). Non réorganisés (envoyés tels quels) : MP4 fragmentés
+  (`moof`), données externes (`dref`), `stz2`, fichiers incohérents.
+- Les autres formats (MKV, AVI…) partent tels quels.
+
 ## Photos : préparation (`PhotoPreparer.cs`, côté WPF)
 
 La TV ignore l'orientation EXIF et ne lit ni HEIC ni WebP. Avant l'envoi, une

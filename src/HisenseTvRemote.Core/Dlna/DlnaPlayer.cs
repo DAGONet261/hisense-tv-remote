@@ -48,7 +48,7 @@ public sealed class DlnaPlayer(IPAddress tv, HttpClient http) : IMediaPlayer
     public async Task ShowAsync(string path, MediaType type, string title, CancellationToken ct = default)
     {
         var renderer = await RendererAsync(ct).ConfigureAwait(false);
-        var url = _server!.Publish(path, type);
+        var url = _server!.Publish(await ContentForAsync(path, type).ConfigureAwait(false), type);
         _published.Enqueue(url);
         while (_published.Count > KeepPublished) _server.Unpublish(_published.Dequeue());
         try { await renderer.SetUriAsync(url, title, type, ct).ConfigureAwait(false); }
@@ -60,6 +60,23 @@ public sealed class DlnaPlayer(IPAddress tv, HttpClient http) : IMediaPlayer
         }
         await renderer.PlayAsync(ct).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// MP4/MOV : servis réorganisés (image et son alternés finement) pour une lecture fluide par la TV ;
+    /// le reste tel quel. Vue gardée en cache (index recalculé seulement si le fichier change).
+    /// </summary>
+    private async Task<MediaContent> ContentForAsync(string path, MediaType type)
+    {
+        if (type.Kind != MediaKind.Video || !Mp4Extensions.Contains(Path.GetExtension(path))) return new FileContent(path);
+        var stamp = File.GetLastWriteTimeUtc(path);
+        if (_mp4Cache is { } c && c.Path == path && c.Stamp == stamp) return c.Content;
+        var content = await Task.Run(() => (MediaContent?)Mp4Interleaver.TryCreate(path)).ConfigureAwait(false) ?? new FileContent(path);
+        _mp4Cache = (path, stamp, content);
+        return content;
+    }
+
+    private static readonly HashSet<string> Mp4Extensions = new([".mp4", ".m4v", ".mov"], StringComparer.OrdinalIgnoreCase);
+    private (string Path, DateTime Stamp, MediaContent Content)? _mp4Cache;
 
     public async Task PlayAsync(CancellationToken ct = default) => await (await RendererAsync(ct).ConfigureAwait(false)).PlayAsync(ct).ConfigureAwait(false);
     public async Task PauseAsync(CancellationToken ct = default) => await (await RendererAsync(ct).ConfigureAwait(false)).PauseAsync(ct).ConfigureAwait(false);

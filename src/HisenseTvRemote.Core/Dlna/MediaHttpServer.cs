@@ -17,7 +17,7 @@ public sealed class MediaHttpServer : IAsyncDisposable
 {
     private readonly TcpListener _listener;
     private readonly IReadOnlySet<IPAddress> _allowed;
-    private readonly ConcurrentDictionary<string, (string Path, MediaType Type)> _files = new();
+    private readonly ConcurrentDictionary<string, (MediaContent Content, MediaType Type)> _files = new();
     private readonly CancellationTokenSource _stop = new();
     private readonly Task _loop;
 
@@ -43,11 +43,17 @@ public sealed class MediaHttpServer : IAsyncDisposable
     /// <summary>Demande refusée (appareil non autorisé, fichier inconnu) : diagnostic.</summary>
     public event Action<string>? RequestRejected;
 
-    /// <summary>Publie un fichier et renvoie son adresse. Le nom du fichier n'apparaît pas dans l'adresse.</summary>
-    public string Publish(string path, MediaType type)
+    /// <summary>Fin d'un envoi (complet ou interrompu par la TV) : octets, durée, débit. Diagnostic.</summary>
+    public event Action<TransferStats>? TransferCompleted;
+
+    /// <summary>Publie un fichier tel quel et renvoie son adresse.</summary>
+    public string Publish(string path, MediaType type) => Publish(new FileContent(path), type);
+
+    /// <summary>Publie un contenu (fichier ou vue réorganisée) ; le nom du fichier n'apparaît pas dans l'adresse.</summary>
+    public string Publish(MediaContent content, MediaType type)
     {
-        var token = Guid.NewGuid().ToString("N") + Path.GetExtension(path).ToLowerInvariant();
-        _files[token] = (path, type);
+        var token = Guid.NewGuid().ToString("N") + Path.GetExtension(content.SourcePath).ToLowerInvariant();
+        _files[token] = (content, type);
         return $"{BaseUrl}/media/{token}";
     }
 
@@ -116,16 +122,15 @@ public sealed class MediaHttpServer : IAsyncDisposable
             var q = target.IndexOf('?');
             var pathPart = q >= 0 ? target[..q] : target;
             var token = pathPart.StartsWith("/media/", StringComparison.Ordinal) ? pathPart[7..] : "";
-            if (!_files.TryGetValue(token, out var file) || !File.Exists(file.Path))
+            if (!_files.TryGetValue(token, out var file) || !File.Exists(file.Content.SourcePath))
             {
                 await SendStatusAsync(stream, 404, "Not Found", ct).ConfigureAwait(false);
                 RequestRejected?.Invoke($"{method} {pathPart} (404)");
                 return;
             }
 
-            await using var fs = new FileStream(file.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete,
-                64 * 1024, useAsync: true);
-            var size = fs.Length;
+            using var source = file.Content.OpenSource();
+            var size = file.Content.Length;
             var r = ByteRange.Parse(range, size);
             if (r is { IsUnsatisfiable: true })
             {
@@ -146,18 +151,28 @@ public sealed class MediaHttpServer : IAsyncDisposable
             sb.Append("Server: Windows UPnP/1.0 DLNADOC/1.50 VIDAA-Hisense/1.0\r\n");
             sb.Append("Connection: close\r\n\r\n");
             await stream.WriteAsync(Encoding.ASCII.GetBytes(sb.ToString()), ct).ConfigureAwait(false);
-            RequestServed?.Invoke($"{method} {Path.GetFileName(file.Path)} {(r is null ? "200" : $"206 {start}+{length}")}");
+            var name = Path.GetFileName(file.Content.SourcePath);
+            RequestServed?.Invoke($"{method} {name} {(r is null ? "200" : $"206 {start}+{length}")}");
             if (method == "HEAD") return;
 
-            fs.Position = start;
             var buffer = new byte[128 * 1024];
+            var position = start;
             var left = length;
-            while (left > 0)
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            try
             {
-                var n = await fs.ReadAsync(buffer.AsMemory(0, (int)Math.Min(buffer.Length, left)), ct).ConfigureAwait(false);
-                if (n == 0) break;
-                await stream.WriteAsync(buffer.AsMemory(0, n), ct).ConfigureAwait(false);
-                left -= n;
+                while (left > 0)
+                {
+                    var n = await file.Content.ReadAsync(source, position, buffer.AsMemory(0, (int)Math.Min(buffer.Length, left)), ct).ConfigureAwait(false);
+                    if (n == 0) break;
+                    await stream.WriteAsync(buffer.AsMemory(0, n), ct).ConfigureAwait(false);
+                    position += n;
+                    left -= n;
+                }
+            }
+            finally
+            {
+                TransferCompleted?.Invoke(new TransferStats(name, start, length, length - left, watch.Elapsed));
             }
         }
         // La TV coupe souvent la connexion d'elle-même (changement de position, fin de lecture) : normal.
@@ -195,4 +210,11 @@ public sealed class MediaHttpServer : IAsyncDisposable
         try { await _loop.ConfigureAwait(false); } catch (Exception) { /* arrêt */ }
         _stop.Dispose();
     }
+}
+
+/// <summary>Un envoi à la TV : début, taille demandée, octets réellement envoyés, durée.</summary>
+public sealed record TransferStats(string File, long Start, long Requested, long Sent, TimeSpan Elapsed)
+{
+    public bool Completed => Sent == Requested;
+    public double MegabytesPerSecond => Elapsed.TotalSeconds > 0 ? Sent / 1048576.0 / Elapsed.TotalSeconds : 0;
 }
