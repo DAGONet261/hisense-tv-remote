@@ -104,6 +104,18 @@ public class CoreTests : IDisposable
         Assert.True(loaded.HasPrivateKey);
         Assert.Equal(self.Thumbprint, loaded.Thumbprint);
 
+        // Certificat intégré à l'app : installé si absent, mis à jour s'il change, jamais rétrogradé.
+        var bundledDir = Path.Combine(_dir, "bundled");
+        var bytes = File.ReadAllBytes(p12);
+        Assert.Equal(ClientCertificate.BundledResult.Installed, ClientCertificate.InstallBundled(bytes, "secret", bundledDir));
+        Assert.Equal(ClientCertificate.BundledResult.AlreadyInstalled, ClientCertificate.InstallBundled(bytes, "secret", bundledDir));
+        using var newer = req.CreateSelfSigned(DateTimeOffset.Now.AddDays(-1), DateTimeOffset.Now.AddYears(5));
+        var newerBytes = newer.Export(X509ContentType.Pkcs12, "neuf");
+        Assert.Equal(ClientCertificate.BundledResult.Updated, ClientCertificate.InstallBundled(newerBytes, "neuf", bundledDir));
+        using (var now = ClientCertificate.Load(ClientCertificate.Find(bundledDir)!.Value)) Assert.Equal(newer.Thumbprint, now.Thumbprint);
+        Assert.Equal(ClientCertificate.BundledResult.KeptNewer, ClientCertificate.InstallBundled(bytes, "secret", bundledDir));
+        Assert.ThrowsAny<CryptographicException>(() => ClientCertificate.InstallBundled(bytes, "faux", Path.Combine(_dir, "x")));
+
         // Réimport d'une paire PEM existante.
         var other = Path.Combine(_dir, "certs2");
         Assert.Equal("CN=test-vidaa", ClientCertificate.ImportPem(paths.Cert, paths.Key, other));

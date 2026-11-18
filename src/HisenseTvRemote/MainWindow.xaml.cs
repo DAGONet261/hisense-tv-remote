@@ -39,6 +39,7 @@ public partial class MainWindow : Window
         Loaded += async (_, _) =>
         {
             _app.Remote.ReloadTvs();
+            if (BundledCertificate.EnsureInstalled(_app.Settings.CertDirectory) is { } bundled) _app.Remote.Report(bundled.Message, bundled.Failed);
             if (!CertificateOk()) return;
             await _app.Remote.LoadTvContentAsync();
         };

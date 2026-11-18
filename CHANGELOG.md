@@ -8,6 +8,7 @@ Une section par version, la plus récente en haut. Le titre de section doit êtr
 - Le projet est désormais **public et libre** (licence MIT) : le fichier de licence est installé avec l'application.
 - **Pare-feu** : l'installeur propose d'autoriser le partage vers la TV (case cochée par défaut), y compris pour une installation « pour moi seul », vérifie que c'est fait et signale un réseau classé « Public ». L'application détecte aussi le réseau « Public » et ouvre les paramètres réseau en un clic.
 - Mention « projet indépendant, non affilié à Hisense » dans l'installeur et dans « TV et réglages », avec le numéro de version.
+- Installation sur ses propres postes : le certificat client VIDAA peut être intégré à un installeur personnel (jamais aux installeurs publics) et s'installe tout seul au premier lancement.
 
 ## 1.0.0.2
 

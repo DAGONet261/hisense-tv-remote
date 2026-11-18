@@ -44,9 +44,13 @@ public static class ClientCertificate
     /// (RC2/3DES) de ce fichier : plus besoin d'OpenSSL ni de Python.
     /// </summary>
     /// <returns>Sujet du certificat importé.</returns>
-    public static string ImportPkcs12(string p12Path, string password, string? targetDirectory = null)
+    public static string ImportPkcs12(string p12Path, string password, string? targetDirectory = null) =>
+        ImportPkcs12(File.ReadAllBytes(p12Path), password, targetDirectory);
+
+    /// <summary>Importe un .p12 déjà en mémoire (certificat intégré à l'application).</summary>
+    public static string ImportPkcs12(byte[] p12, string password, string? targetDirectory = null)
     {
-        using var cert = new X509Certificate2(p12Path, password, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet);
+        using var cert = new X509Certificate2(p12, password, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet);
         using var rsa = cert.GetRSAPrivateKey() ?? throw new CryptographicException("Le .p12 ne contient pas de clé privée RSA.");
         // L'export en clair d'une clé CNG est souvent refusé : export chiffré puis réimport, puis PEM.
         var tmp = Guid.NewGuid().ToString("N");
@@ -56,6 +60,33 @@ public static class ClientCertificate
         plain.ImportEncryptedPkcs8PrivateKey(tmp, encrypted, out _);
         Write(targetDirectory, cert.ExportCertificatePem(), plain.ExportPkcs8PrivateKeyPem());
         return cert.Subject;
+    }
+
+    /// <summary>Résultat de <see cref="InstallBundled"/>.</summary>
+    public enum BundledResult { AlreadyInstalled, Installed, Updated, KeptNewer }
+
+    /// <summary>
+    /// Certificat intégré à l'application (installeurs personnels) : installé s'il n'y en a pas, ou s'il
+    /// est différent et au moins aussi récent que celui en place (nouvelle version de l'app Android) ; un
+    /// certificat installé plus récent est gardé.
+    /// </summary>
+    public static BundledResult InstallBundled(byte[] p12, string password, string? targetDirectory = null)
+    {
+        using var bundled = new X509Certificate2(p12, password, X509KeyStorageFlags.EphemeralKeySet);
+        // Comparaison avec le dossier où il serait installé (pas de repli sur le dossier par défaut).
+        var dir = string.IsNullOrWhiteSpace(targetDirectory) ? DefaultDirectory : targetDirectory;
+        var cert = Path.Combine(dir, CertFile);
+        var key = Path.Combine(dir, KeyFile);
+        if (File.Exists(cert) && File.Exists(key))
+        {
+            using var current = X509Certificate2.CreateFromPemFile(cert, key);
+            if (current.Thumbprint == bundled.Thumbprint) return BundledResult.AlreadyInstalled;
+            if (current.NotAfter > bundled.NotAfter) return BundledResult.KeptNewer;
+            ImportPkcs12(p12, password, targetDirectory);
+            return BundledResult.Updated;
+        }
+        ImportPkcs12(p12, password, targetDirectory);
+        return BundledResult.Installed;
     }
 
     /// <summary>Importe une paire .pem/.key existante (vérifiée avant copie).</summary>

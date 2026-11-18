@@ -41,6 +41,31 @@
     <Message Importance="high" Condition="'$(_HtrBumping)' != 'true'" Text="VIDAA - Hisense : version $(_HtrVersion)" />
   </Target>
 
+  <!--
+    Certificat client VIDAA intégré : INSTALLEURS PERSONNELS SEULEMENT. Si certs\vidaa_client.p12 (non
+    versionné) et VIDAA_P12_PASSWORD (.env) existent sur le poste, ils sont intégrés à l'exe et installés
+    au premier lancement (BundledCertificate.cs). Jamais sur GitHub (pas de certs\ ni de .env) : le
+    workflow vérifie que l'installeur public n'en contient pas. Désactiver : -p:HtrBundleCertificate=false.
+  -->
+  <Target Name="HtrBundleCertificate" BeforeTargets="BeforeBuild"
+          Condition="'$(MSBuildProjectName)' == 'HisenseTvRemote' And '$(HtrBundleCertificate)' != 'false' And Exists('$(HtrRoot)certs\vidaa_client.p12') And Exists('$(HtrRoot).env')">
+    <PropertyGroup>
+      <_HtrPwdFile>$(ProjectDir)$(IntermediateOutputPath)vidaa_client.p12.pwd</_HtrPwdFile>
+    </PropertyGroup>
+    <!-- Mot de passe lu dans .env (seul endroit des secrets) ; copie temporaire dans obj\ pour l'intégration. -->
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$line = Get-Content -LiteralPath '$(HtrRoot).env' | Where-Object { $_ -like 'VIDAA_P12_PASSWORD=*' } | Select-Object -First 1; if ($line) { [IO.File]::WriteAllText('$(_HtrPwdFile)', $line.Substring(19).Trim()) } else { exit 3 }&quot;"
+          ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="_HtrPwdExit" />
+    </Exec>
+    <Warning Condition="'$(_HtrPwdExit)' != '0'" Text="certs\vidaa_client.p12 présent mais VIDAA_P12_PASSWORD absent de .env : certificat non intégré." />
+    <ItemGroup Condition="'$(_HtrPwdExit)' == '0'">
+      <EmbeddedResource Include="$(HtrRoot)certs\vidaa_client.p12" LogicalName="HisenseTvRemote.Bundled.vidaa_client.p12" />
+      <EmbeddedResource Include="$(_HtrPwdFile)" LogicalName="HisenseTvRemote.Bundled.vidaa_client.p12.pwd" />
+    </ItemGroup>
+    <Message Condition="'$(_HtrPwdExit)' == '0'" Importance="high"
+             Text="VIDAA - Hisense : certificat client intégré (installeur PERSONNEL : ne pas le partager)." />
+  </Target>
+
   <Target Name="HtrRelease" AfterTargets="Build"
           Condition="'$(MSBuildProjectName)' == 'HisenseTvRemote' And '$(Configuration)' == 'Release' And '$(HtrPackaging)' != 'true' And '$(DesignTimeBuild)' != 'true'">
     <!-- 1. La compilation a réussi : la version est acquise. -->

@@ -111,6 +111,9 @@ jobs:
             $fv = (Get-Item $f).VersionInfo.FileVersion.Trim()
             if ($fv -ne $env:VERSION) { throw "$f : version $fv au lieu de $env:VERSION." }
           }
+          # Jamais de certificat client intégré dans l'installeur public (réservé aux installeurs personnels).
+          $dll = [IO.File]::ReadAllText((Resolve-Path dist/publish/HisenseTvRemote.dll), [Text.Encoding]::ASCII)
+          if ($dll.Contains('HisenseTvRemote.Bundled.vidaa_client')) { throw "Certificat client intégré dans l'installeur public !" }
           # Rien de sensible ne doit partir dans l'installeur (certificat, clés, base, secrets).
           $bad = Get-ChildItem dist/publish -Recurse -File -Force |
             Where-Object { $_.Name -match '\.(pem|key|p12|pfx|bks|jks|db|db-wal|db-shm|log)$' -or $_.Name -like '.env*' }

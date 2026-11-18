@@ -49,3 +49,28 @@ fichiers du projet ? ».
   premier lancement. Pour un déploiement interne sur plusieurs postes : le
   `.p12` peut être lu depuis un partage réseau protégé au moment de
   l'installation, sans jamais entrer dans le dépôt ni dans le paquet.
+
+## Certificat intégré aux installeurs personnels (18/11/2026)
+
+Demande de l'utilisateur : ne plus importer le `.p12` à chaque installation sur
+ses postes. Le dépôt et les installeurs GitHub étant **publics**, le
+certificat (clé privée d'Hisense) n'y va **jamais** ; il est intégré seulement
+dans les installeurs compilés sur un poste qui l'a :
+
+- Poser le fichier dans `certsidaa_client.p12` (dossier ignoré par Git) ; le
+  mot de passe reste dans `.env` (`VIDAA_P12_PASSWORD`).
+- La compilation (`src/Directory.Build.targets`, cible `HtrBundleCertificate`)
+  les intègre à l'exe comme ressources ; message « installeur PERSONNEL : ne
+  pas le partager ». Désactiver : `-p:HtrBundleCertificate=false`.
+- Au démarrage (`BundledCertificate.cs` → `ClientCertificate.InstallBundled`) :
+  installé dans `%APPDATA%\HisenseTvRemote\certs` s'il manque ; remplacé s'il
+  est différent et au moins aussi récent (nouvelle version de l'app Android) ;
+  jamais rétrogradé.
+- **Nouveau certificat** (mise à jour de l'app Android) : remplacer
+  `certsidaa_client.p12` et le mot de passe dans `.env`, recompiler,
+  réinstaller.
+- **Garde-fou** : le workflow GitHub refuse de publier un installeur qui
+  contiendrait un certificat intégré. L'installeur **local** (`dist\`) le
+  contient : ne pas le partager.
+- Vérifié : intégré, installé au premier démarrage, rien refait au second,
+  empreinte identique au certificat déjà en place.

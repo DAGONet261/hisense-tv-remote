@@ -72,6 +72,13 @@ retour à la ligne). Le workflow la place en tête de la Release sous
 Sans section, la Release n'a que la liste des commits. La version à venir est
 celle de `version.txt` + 1 (révision).
 
+### Installeur local = installeur PERSONNEL (certificat intégré)
+
+Si `certsidaa_client.p12` et `VIDAA_P12_PASSWORD` (`.env`) existent sur le
+poste, l'installeur de `dist\` contient le certificat client (voir
+`certificat-client.md`) : à garder pour soi. L'installeur public est celui de
+la Release GitHub (vérifié sans certificat par le workflow).
+
 ### Côté GitHub : `.github/workflows/release.yml`
 
 Sur une machine Windows neuve (`windows-latest`) :
