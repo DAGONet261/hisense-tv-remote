@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| Certificat intégré aux installeurs personnels | `certificat-integre` | `src/HisenseTvRemote.Core/Vidaa/ClientCertificate.cs`, `src/HisenseTvRemote/BundledCertificate.cs` (nouveau), `src/HisenseTvRemote/MainWindow.xaml.cs`, `src/Directory.Build.targets`, `.github/workflows/release.yml`, `src/HisenseTvRemote.Tests/CoreTests.cs`, `contexte/certificat-client.md`, `contexte/publication.md` | 2026-11-18 | Claude (session principale) |
+| _(aucune session en cours)_ | | | | |

@@ -59,6 +59,7 @@ chercher ailleurs.
 | `HisenseTvRemote.Core/Dlna/` | Partage vers la TV (DLNA) : `MediaTypes.cs` (formats, plages d'octets), `MediaHttpServer.cs` (serveur HTTP local, TV seule autorisée), `MediaContent.cs` (contenu servi, octets ↔ temps, partie chargée), `DlnaRenderer.cs` (lecteur DLNA de la TV : découverte, envoi, lecture, sauts), `DlnaPlayer.cs`, `Mp4Interleaver.cs` (MP4 réorganisés à la volée), `VideoRemuxer.cs` (TS/AVI → MP4 avec FFmpeg). |
 | `HisenseTvRemote.Core/YouTube/YouTubeCaster.cs` | Envoyer un lien YouTube : DIAL (screenId) + API Lounge de YouTube (session, lecture, file), liens reconnus. |
 | `HisenseTvRemote.Core/ViewModels/ShareViewModel.cs` | Écran « Partager vers la TV » : liste, préparation en arrière-plan, diaporama, lecture, barre de progression. |
+| `HisenseTvRemote/BundledCertificate.cs` | Certificat client intégré aux installeurs personnels (`certs/vidaa_client.p12` + `.env`) : installé ou mis à jour au démarrage. |
 | `HisenseTvRemote/YouTubeWindow.xaml(.cs)` | Fenêtre « Envoyer un lien YouTube » (bouton YouTube, Ctrl + Y, lien du presse-papiers). |
 | `HisenseTvRemote/ShareWindow.xaml(.cs)` | Fenêtre « Partager vers la TV » (bouton Partager, Ctrl + P, glisser-déposer). |
 | `HisenseTvRemote/PhotoPreparer.cs`, `MediaDuration.cs`, `FirewallHelper.cs`, `FfmpegLocator.cs` | Partage : photos (HEIC, orientation, 4K), durée des vidéos (Windows), règle de pare-feu, emplacement de FFmpeg. |
