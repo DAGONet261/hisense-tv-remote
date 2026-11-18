@@ -16,9 +16,11 @@
   la version, ex. pour passer en 1.1).
 - **Debug** : lit `version.txt`, n'incrémente jamais, ne produit pas
   d'installeur. Les tests (`dotnet test`) ne sont pas concernés.
-- `dist\` est généré et n'est **pas versionné** ; `version.txt`, lui, l'est :
-  **committer `version.txt` après chaque Release** pour que l'autre poste
-  reparte du bon numéro.
+  5. publie la **Release GitHub** : commit « Release <version> » de
+     `version.txt`, push de `main`, tag `v<version>` et installeur joint
+     (voir plus bas).
+- `dist\` est généré et n'est **pas versionné** ; `version.txt`, lui, l'est
+  (commité automatiquement par l'étape 5).
 
 ## Où c'est câblé
 
@@ -41,6 +43,37 @@
     s'il manque : avertissement, l'app est quand même publiée.
 - `installer/VidaaHisense.iss` : script de l'installeur.
 - `build/New-AppIcon.ps1` : régénère l'icône et les images de l'assistant.
+
+## Release GitHub automatique (depuis le 18/11)
+
+À la fin d'une compilation Release, `build/Publish-GitHubRelease.ps1` :
+
+1. vérifie : `git` et GitHub CLI (`gh`) présents, `gh` connecté
+   (`gh auth login`), branche **`main`**, et **aucune autre modification non
+   commitée** que `version.txt` — le tag doit correspondre exactement au code
+   compilé ;
+2. commite `version.txt` (« Release 1.0.0.2 ») et pousse `main` ;
+3. crée la Release GitHub **`v<version>`** (titre « VIDAA - Hisense
+   <version> »), installeur `VIDAA-Hisense-Setup-<version>.exe` joint, notes
+   en français listant les commits depuis la Release précédente (sans les
+   réservations de zone ni les commits « Release ») ;
+4. si la Release existe déjà (recompilation `-NoBump`), remplace seulement
+   l'installeur.
+
+**Jamais bloquant** : si une condition manque, la compilation réussit quand
+même avec un avertissement `HTR001` (liste d'erreurs de Visual Studio) qui
+dit pourquoi ; l'installeur reste dans `dist\`. Corriger, puis relancer avec
+`build\Publish-Release.ps1 -NoBump` (republie la même version).
+
+- Désactiver : `-p:HtrGitHub=false` (MSBuild) ou `-NoGitHub` (script).
+- Dépôt privé → Releases privées aussi (téléchargement réservé aux comptes
+  ayant accès).
+- **Exception à la règle des sessions** : ce commit « Release » de
+  `version.txt` se fait directement sur `main` (c'est la Release elle-même).
+  Une Release lancée depuis un dossier de travail (autre branche) n'est pas
+  publiée : fusionner d'abord dans `main`.
+- Messages en UTF-8 (`[Console]::OutputEncoding` + `StdOutEncoding` de
+  l'`Exec`) : accents lisibles dans la fenêtre Sortie de Visual Studio.
 
 ## Piège Visual Studio : « Générer » ne fait rien si rien n'a changé
 

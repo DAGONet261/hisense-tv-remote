@@ -7,8 +7,11 @@
         1. prend la version suivante (dernier nombre + 1) ;
         2. compile ; si la compilation réussit, enregistre cette version dans version.txt ;
         3. publie l'app autonome dans dist\publish\ ;
-        4. compile l'installeur Inno Setup dans dist\, à la même version.
-    - Désactiver l'incrément : -p:HtrBump=false ; désactiver l'installeur : -p:HtrSetup=false.
+        4. compile l'installeur Inno Setup dans dist\, à la même version ;
+        5. publie la Release sur GitHub (build\Publish-GitHubRelease.ps1) : commit « Release x »
+           de version.txt, push de main, tag v<version> et installeur joint.
+    - Désactiver l'incrément : -p:HtrBump=false ; l'installeur : -p:HtrSetup=false ;
+      la Release GitHub : -p:HtrGitHub=false.
     Détail : contexte/publication.md.
   -->
 
@@ -59,5 +62,10 @@
           Command="&quot;$(HtrIscc)&quot; /Q &quot;/DAppVersion=$(_HtrVersion)&quot; &quot;/DPublishDir=$(HtrDistDir)publish&quot; &quot;/O$(HtrDistDir.TrimEnd('\'))&quot; &quot;$(HtrRoot)installer\VidaaHisense.iss&quot;" />
     <Message Condition="'$(HtrSetup)' != 'false' And '$(HtrIscc)' != ''" Importance="high"
              Text="Installeur : $(HtrDistDir)VIDAA-Hisense-Setup-$(_HtrVersion).exe" />
+
+    <!-- 4. Release GitHub (tag + installeur). N'échoue jamais la compilation : avertissement si impossible. -->
+    <Exec Condition="'$(HtrGitHub)' != 'false' And '$(HtrSetup)' != 'false' And Exists('$(HtrDistDir)VIDAA-Hisense-Setup-$(_HtrVersion).exe')"
+          ContinueOnError="true" StdOutEncoding="utf-8" StdErrEncoding="utf-8"
+          Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(HtrRoot)build\Publish-GitHubRelease.ps1&quot; -Version $(_HtrVersion) -Setup &quot;$(HtrDistDir)VIDAA-Hisense-Setup-$(_HtrVersion).exe&quot;" />
   </Target>
 </Project>
