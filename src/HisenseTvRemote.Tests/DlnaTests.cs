@@ -394,40 +394,82 @@ public class DlnaTests : IDisposable
         Assert.Null(VideoRemuxer.ParseProgress("out_time_us=N/A"));
     }
 
+    private static async Task WaitFor(Func<bool> condition)
+    {
+        for (var i = 0; i < 250 && !condition(); i++) await Task.Delay(20);
+        Assert.True(condition());
+    }
+
     [Fact]
-    public async Task Preparation_video_progression_puis_envoi_ou_annulation()
+    public async Task Preparation_des_l_ajout_file_priorite_et_annulation()
     {
         var player = new FakePlayer();
-        var seen = new List<double>();
-        var gate = new TaskCompletionSource();
+        var gates = new Dictionary<string, TaskCompletionSource>();
+        var order = new List<string>();
         var vm = new ShareViewModel(() => player, null, null, _ => TimeSpan.FromMinutes(2),
             async (path, duration, progress, ct) =>
             {
-                Assert.Equal(TimeSpan.FromMinutes(2), duration);
+                var name = Path.GetFileName(path);
+                var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                lock (gates) { order.Add(name); gates[name] = gate; }
                 progress.Report(0.5);
-                if (path.EndsWith("lent.mkv")) await Task.Delay(Timeout.Infinite, ct);
-                await gate.Task;
-                return path.Replace(".ts", ".converti.mp4");
+                await gate.Task.WaitAsync(ct);
+                return path + ".mp4";
             });
-        vm.Add([File("film.ts"), File("lent.mkv")]);
-        vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(vm.PrepareProgress)) seen.Add(vm.PrepareProgress); };
+        void Release(string name) { lock (gates) gates[name].SetResult(); }
+        bool Started(string name) { lock (gates) return gates.ContainsKey(name); }
 
-        var show = vm.ShowAsync(vm.Items[0]);
-        await Task.Delay(50);
-        Assert.True(vm.IsPreparing);
-        gate.SetResult();
+        vm.Add([File("a.ts"), File("b.mkv"), File("c.mp4"), File("d.avi")]);
+        await WaitFor(() => Started("a.ts"));
+        Assert.Equal(PrepareState.Preparing, vm.Items[0].PrepareState);                           // dès l'ajout
+        Assert.Equal(PrepareState.Queued, vm.Items[1].PrepareState);                               // une à la fois
+        Assert.Equal(PrepareState.None, vm.Items[2].PrepareState);                                 // MP4 : rien à faire
+        Assert.Equal("En attente de préparation pour la TV", vm.Items[1].PrepareText);
+        await WaitFor(() => vm.Items[0].PrepareText == "Préparation pour la TV… 50 %");
+
+        // Lecture de d.avi demandée pendant la préparation de a.ts : d.avi passe avant b.mkv.
+        var show = vm.ShowAsync(vm.Items[3]);
+        await WaitFor(() => vm.IsPreparing);
+        Release("a.ts");
+        await WaitFor(() => Started("d.avi"));
+        Assert.Equal(["a.ts", "d.avi"], order);
+        Release("d.avi");
         await show;
         Assert.False(vm.IsPreparing);
-        Assert.Equal("show film.converti.mp4 Video", player.Calls[^1]);                           // MP4 converti envoyé
-        Assert.Contains(0.5, seen);
+        Assert.Equal("show d.avi.mp4 Video", player.Calls[^1]);                                   // lecture automatique
+        Assert.Equal("Prête pour la TV", vm.Items[3].PrepareText);
 
-        var slow = vm.ShowAsync(vm.Items[1]);
-        await Task.Delay(50);
-        await vm.StopAsync();                                                                      // Stop = annuler
-        await slow;
-        Assert.Equal("show film.converti.mp4 Video", player.Calls[^1]);                           // rien envoyé
-        Assert.Contains("annulée", vm.Status);
-        Assert.False(vm.LastFailed);
+        await vm.ShowAsync(vm.Items[0]);                                                           // déjà prête : immédiat
+        Assert.Equal("show a.ts.mp4 Video", player.Calls[^1]);
+
+        // b.mkv : Stop arrête l'attente, pas la préparation ; la retirer de la liste l'annule.
+        await WaitFor(() => Started("b.mkv"));
+        var b = vm.Items[1];
+        var wait = vm.ShowAsync(b);
+        await WaitFor(() => vm.IsPreparing);
+        await vm.StopAsync();
+        await wait;
+        Assert.Contains("continue en arrière-plan", vm.Status);
+        Assert.Equal(PrepareState.Preparing, b.PrepareState);
+        vm.Selected = b;
+        vm.RemoveSelectedCommand.Execute(null);
+        await WaitFor(() => b.PrepareState == PrepareState.None);
+        Assert.Equal("show a.ts.mp4 Video", player.Calls[^1]);                                    // rien envoyé
+    }
+
+    [Fact]
+    public async Task Preparation_impossible_affichee()
+    {
+        var player = new FakePlayer();
+        var vm = new ShareViewModel(() => player, null, null, null,
+            (_, _, _, _) => Task.FromException<string>(new NotSupportedException("format d'image « av1 » non lu par la TV.")));
+        vm.Add([File("film.mkv")]);
+        await WaitFor(() => vm.Items[0].PrepareState == PrepareState.Failed);
+        Assert.Equal("Préparation impossible : format d'image « av1 » non lu par la TV", vm.Items[0].PrepareText);
+        await vm.ShowAsync(vm.Items[0]);                                                           // nouvel essai, même échec
+        Assert.True(vm.LastFailed);
+        Assert.Contains("av1", vm.Status);
+        Assert.Empty(player.Calls);
     }
 
     [Fact]

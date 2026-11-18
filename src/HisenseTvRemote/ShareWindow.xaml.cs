@@ -53,6 +53,7 @@ public partial class ShareWindow : Window
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
+        CleanupLeftovers();
         // Pare-feu vérifié d'emblée : sur certains postes, Windows bloque sans rien demander.
         var exe = Environment.ProcessPath;
         if (exe is not null && await Task.Run(() => FirewallHelper.HasAllowRule(exe)) == false)
@@ -61,6 +62,26 @@ public partial class ShareWindow : Window
             _vm.Report("Avant de partager : autorisez l'app dans le pare-feu Windows (bandeau ci-dessus).", false);
         }
         await _vm.MonitorAsync(_monitor.Token);
+    }
+
+    /// <summary>
+    /// Restes de préparations interrompues (plantage, PC éteint) : dossiers temporaires de plus de 6 h.
+    /// Ceux de la session en cours sont effacés à la fermeture de cette fenêtre.
+    /// </summary>
+    private static void CleanupLeftovers()
+    {
+        var root = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "HisenseTvRemote", "partage");
+        if (!System.IO.Directory.Exists(root)) return;
+        foreach (var dir in System.IO.Directory.EnumerateDirectories(root))
+        {
+            try
+            {
+                if (System.IO.Directory.GetLastWriteTimeUtc(dir) < DateTime.UtcNow.AddHours(-6))
+                    System.IO.Directory.Delete(dir, recursive: true);
+            }
+            catch (System.IO.IOException) { }                             // encore utilisé : on laisse
+            catch (UnauthorizedAccessException) { }
+        }
     }
 
     private async void OnAllowFirewall(object sender, RoutedEventArgs e)

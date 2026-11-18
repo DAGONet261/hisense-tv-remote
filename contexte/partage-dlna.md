@@ -66,6 +66,40 @@ le `moov` est à la fin).
   (`moof`), données externes (`dref`), `stz2`, fichiers incohérents.
 - Les autres formats (MKV, AVI…) partent tels quels.
 
+## Vidéos TS, MKV, AVI… : converties en MP4 (FFmpeg) — 18/11
+
+- **Constat** (essais sur la 55A53FXVT) : un TS (H.264 864×488, pixels non
+  carrés, enregistré depuis un site de streaming) et un MKV (VP9 4K + Opus)
+  sont refusés (« fichier non pris en charge ») ; le **même contenu en MP4**
+  se lit, **VP9 4K compris**, et aussi en WebM/MKV refait par FFmpeg. C'est
+  l'enveloppe d'origine qui gêne le lecteur DLNA, pas les codecs.
+- **Solution** (`Dlna/VideoRemuxer.cs`) : FFmpeg change l'enveloppe en MP4
+  sans réencoder l'image (H.264, HEVC, VP9, MPEG-4/2 recopiés) ; son recopié
+  (AAC, MP3, AC3, E-AC3) ou converti en AAC (Opus, Vorbis, DTS…). Autre codec
+  d'image : message clair (réencodage en direct possible plus tard : la build
+  contient les encodeurs H.264 matériels Intel/NVIDIA/AMD/Windows).
+- **Lire pendant la conversion : impossible avec cette TV** (essais du 18/11).
+  Un flux sans taille (MP4 fragmenté ou MKV écrits au fil de l'eau) est
+  refusé aussitôt ; avec une taille annoncée, la TV va d'abord lire la **fin
+  du fichier** (index), absente tant que la conversion n'est pas finie, puis
+  abandonne ; un MP4 fragmenté complet reste bloqué à 0:00. → **Préparation
+  dès l'ajout à la liste**, en arrière-plan, une vidéo à la fois (« En
+  attente », « Préparation 45 % », « Prête pour la TV ») ; une vidéo lancée
+  avant d'être prête passe en tête et démarre seule à la fin ; Stop arrête
+  l'attente (pas la préparation) ; retirer de la liste annule.
+- Durées mesurées (disque D: ≈ 30 Mo/s) : film TS 714 Mo ≈ 25 s ; MKV 4K
+  3,3 Go ≈ 1 min 30-2 min.
+- Fichiers convertis : dossier temporaire effacé à la fermeture de l'écran de
+  partage ; restes de plus de 6 h (plantage) effacés à l'ouverture suivante.
+- FFmpeg 9.0.2 **LGPL v3** (build BtbN, DLL partagées) : `build/Get-FFmpeg.ps1`
+  le récupère depuis la Release `outils-ffmpeg-9.0.2` du dépôt (copie figée,
+  SHA-256 vérifié ; les builds datées de BtbN disparaissent), dans
+  `third_party/ffmpeg/` (non versionné), copié dans `ffmpeg/` à côté de l'exe ;
+  la compilation Release et le workflow le récupèrent s'il manque. Licence et
+  sources : `THIRD-PARTY-NOTICES.md`. VLC n'apporterait rien de plus : il
+  utilise les mêmes bibliothèques (libavcodec/libavformat) et n'envoie pas vers
+  un lecteur DLNA.
+
 ## Photos : préparation (`PhotoPreparer.cs`, côté WPF)
 
 La TV ignore l'orientation EXIF et ne lit ni HEIC ni WebP. Avant l'envoi, une

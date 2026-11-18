@@ -6,6 +6,9 @@ using HisenseTvRemote.Core.Dlna;
 
 namespace HisenseTvRemote.Core.ViewModels;
 
+/// <summary>Préparation d'une vidéo (TS, MKV…) avant l'envoi : la TV n'accepte qu'un MP4 complet.</summary>
+public enum PrepareState { None, Queued, Preparing, Ready, Failed }
+
 /// <summary>Un fichier de la liste de partage.</summary>
 public sealed partial class ShareItem(string path, MediaType type) : ObservableObject
 {
@@ -24,6 +27,39 @@ public sealed partial class ShareItem(string path, MediaType type) : ObservableO
     /// <summary>Fichier actuellement affiché ou joué sur la TV.</summary>
     [ObservableProperty]
     private bool _isCurrent;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PrepareText))]
+    private PrepareState _prepareState;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PrepareText))]
+    private double _prepareProgress;
+
+    /// <summary>MP4 prêt pour la TV (conversion terminée).</summary>
+    public string? PreparedPath { get; internal set; }
+    public string? PrepareError { get; internal set; }
+    internal CancellationTokenSource? PrepareCts { get; set; }
+    internal TaskCompletionSource<string> PrepareDone { get; private set; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    /// <summary>Remet la vidéo dans la file (après une annulation ou un échec).</summary>
+    internal void Requeue()
+    {
+        PrepareDone = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        PrepareError = null;
+        PrepareProgress = 0;
+        PrepareState = PrepareState.Queued;
+    }
+
+    /// <summary>État affiché sous le nom du fichier (vide si rien à préparer).</summary>
+    public string PrepareText => PrepareState switch
+    {
+        PrepareState.Queued => "En attente de préparation pour la TV",
+        PrepareState.Preparing => $"Préparation pour la TV… {PrepareProgress.ToString("P0", CultureInfo.GetCultureInfo("fr-FR"))}",
+        PrepareState.Ready => "Prête pour la TV",
+        PrepareState.Failed => $"Préparation impossible : {PrepareError}",
+        _ => "",
+    };
 
     private static string FormatSize(string path)
     {
@@ -72,6 +108,10 @@ public sealed partial class ShareViewModel(
     /// <summary>Après un saut, la TV renvoie encore l'ancienne position un court instant : on l'ignore.</summary>
     private DateTime _ignorePositionUntil;
     private CancellationTokenSource? _prepareCts;
+    /// <summary>Vidéo demandée par l'utilisateur pendant que d'autres attendent : préparée en premier.</summary>
+    private ShareItem? _priority;
+    private bool _preparing;
+    private readonly CancellationTokenSource _lifetime = new();
     private bool _fetchChecked;
 
     public ObservableCollection<ShareItem> Items { get; } = [];
@@ -166,7 +206,9 @@ public sealed partial class ShareViewModel(
             var type = MediaTypes.Of(p);
             if (type is null || !File.Exists(p)) { ignored++; continue; }
             if (Items.Any(x => string.Equals(x.Path, p, StringComparison.OrdinalIgnoreCase))) continue;
-            Items.Add(new ShareItem(p, type));
+            var item = new ShareItem(p, type);
+            Items.Add(item);
+            if (prepareVideo is not null && VideoRemuxer.NeedsRemux(p)) item.PrepareState = PrepareState.Queued;
             added++;
         }
         OnPropertyChanged(nameof(HasItems));
@@ -174,6 +216,7 @@ public sealed partial class ShareViewModel(
             Report(ignored == 0 ? $"{added} fichier(s) ajouté(s). Double-cliquez sur un fichier pour l'envoyer à la TV."
                 : $"{added} fichier(s) ajouté(s), {ignored} ignoré(s) (format non pris en charge).", false);
         Selected ??= Items.FirstOrDefault();
+        StartPreparing();
         return (added, ignored);
     }
 
@@ -181,6 +224,7 @@ public sealed partial class ShareViewModel(
     private void RemoveSelected()
     {
         if (Selected is null) return;
+        Selected.PrepareCts?.Cancel();
         var i = Items.IndexOf(Selected);
         if (ReferenceEquals(Selected, Current)) Current = null;
         Items.Remove(Selected);
@@ -191,6 +235,7 @@ public sealed partial class ShareViewModel(
     [RelayCommand]
     private void Clear()
     {
+        foreach (var it in Items) it.PrepareCts?.Cancel();
         Items.Clear();
         Current = null;
         Selected = null;
@@ -234,20 +279,31 @@ public sealed partial class ShareViewModel(
                 path = await preparePhoto(item.Path, CancellationToken.None);
             else if (item.Kind == MediaKind.Video && prepareVideo is not null && VideoRemuxer.NeedsRemux(item.Path))
             {
-                // TV : refuse ces enveloppes, lit le même contenu en MP4 → conversion sans réencodage de l'image.
-                using var cts = new CancellationTokenSource();
-                _prepareCts = cts;
-                IsPreparing = true;
-                PrepareProgress = 0;
-                Report($"Préparation de « {item.Name} » pour la TV… (Stop pour annuler)", false);
-                var progress = new Progress<double>(v =>
+                // La TV n'accepte qu'un MP4 complet (index écrit en fin de conversion) : on attend la
+                // préparation, commencée dès l'ajout à la liste ; cette vidéo passe en tête de file.
+                if (item.PrepareState is PrepareState.None or PrepareState.Failed) item.Requeue();
+                if (item.PrepareState != PrepareState.Ready)
                 {
-                    if (!IsPreparing) return;
-                    PrepareProgress = v;
-                    Status = $"Préparation de « {item.Name} » pour la TV… {v.ToString("P0", CultureInfo.GetCultureInfo("fr-FR"))} (Stop pour annuler)";
-                });
-                try { path = await prepareVideo(item.Path, duration, progress, cts.Token); }
-                finally { IsPreparing = false; _prepareCts = null; }
+                    _priority = item;
+                    StartPreparing();
+                    using var wait = new CancellationTokenSource();
+                    _prepareCts = wait;
+                    IsPreparing = true;
+                    void Show()
+                    {
+                        PrepareProgress = item.PrepareProgress;
+                        Status = item.PrepareState == PrepareState.Queued
+                            ? $"« {item.Name} » passe en tête de la file de préparation… (Stop pour ne plus attendre)"
+                            : $"Préparation de « {item.Name} » pour la TV… {item.PrepareProgress.ToString("P0", CultureInfo.GetCultureInfo("fr-FR"))} — la lecture démarrera seule (Stop pour ne plus attendre)";
+                        LastFailed = false;
+                    }
+                    void OnItemChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => Show();
+                    item.PropertyChanged += OnItemChanged;
+                    Show();
+                    try { await item.PrepareDone.Task.WaitAsync(wait.Token); }
+                    finally { item.PropertyChanged -= OnItemChanged; IsPreparing = false; _prepareCts = null; }
+                }
+                path = item.PreparedPath!;
                 type = MediaTypes.Of(path) ?? type;
             }
             if (_player is null)
@@ -265,7 +321,9 @@ public sealed partial class ShareViewModel(
         {
             if (Current is not null) Current.IsCurrent = false;
             Current = null;
-            Report($"Préparation de « {item.Name} » annulée.", false);
+            Report(item.PrepareState is PrepareState.Preparing or PrepareState.Queued
+                ? $"Lecture de « {item.Name} » annulée ; sa préparation continue en arrière-plan."
+                : $"Préparation de « {item.Name} » annulée.", false);
         }
         catch (Exception ex) when (ex is DlnaException or IOException or UnauthorizedAccessException or InvalidOperationException
                                        or NotSupportedException or System.Net.Sockets.SocketException or HttpRequestException)
@@ -294,6 +352,62 @@ public sealed partial class ShareViewModel(
         var i = from is null ? (step > 0 ? -1 : 0) : Items.IndexOf(from);
         var next = Items[((i + step) % Items.Count + Items.Count) % Items.Count];
         return ShowAsync(next);
+    }
+
+    // ---------- File de préparation (une vidéo à la fois, dans l'ordre de la liste) -----------------
+
+    private void StartPreparing()
+    {
+        if (_preparing || prepareVideo is null) return;
+        _preparing = true;
+        _ = PrepareLoopAsync();
+    }
+
+    private async Task PrepareLoopAsync()
+    {
+        try
+        {
+            while (!_lifetime.IsCancellationRequested)
+            {
+                var next = _priority is { PrepareState: PrepareState.Queued } first
+                    ? first
+                    : Items.FirstOrDefault(i => i.PrepareState == PrepareState.Queued);
+                _priority = null;
+                if (next is null) return;
+                await PrepareOneAsync(next);
+            }
+        }
+        finally { _preparing = false; }
+    }
+
+    private async Task PrepareOneAsync(ShareItem item)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+        item.PrepareCts = cts;
+        item.PrepareState = PrepareState.Preparing;
+        item.PrepareProgress = 0;
+        var progress = new Progress<double>(v => { if (item.PrepareState == PrepareState.Preparing) item.PrepareProgress = v; });
+        try
+        {
+            var path = await prepareVideo!(item.Path, durationOf?.Invoke(item.Path), progress, cts.Token);
+            item.PreparedPath = path;
+            item.PrepareProgress = 1;
+            item.PrepareState = PrepareState.Ready;
+            item.PrepareDone.TrySetResult(path);
+        }
+        catch (OperationCanceledException)
+        {
+            item.PrepareState = PrepareState.None;
+            item.PrepareDone.TrySetCanceled();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or NotSupportedException or IOException
+                                       or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            item.PrepareError = ex.Message.TrimEnd('.');
+            item.PrepareState = PrepareState.Failed;
+            item.PrepareDone.TrySetException(ex);
+        }
+        finally { item.PrepareCts = null; }
     }
 
     // ---------- Lecture ---------------------------------------------------------------------------
@@ -462,6 +576,7 @@ public sealed partial class ShareViewModel(
     public async ValueTask DisposeAsync()
     {
         _prepareCts?.Cancel();
+        _lifetime.Cancel();
         if (_player is null) return;
         if (Current is not null)
         {
