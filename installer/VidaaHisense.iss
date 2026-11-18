@@ -17,6 +17,7 @@
 #define AppExeName   "HisenseTvRemote.exe"
 #define AppPublisher "Tiana Riantsoa RAHARISON"
 #define AppDataDir   "HisenseTvRemote"
+#define FirewallRule "VIDAA - Hisense (partage vers la TV)"
 
 #ifndef PublishDir
   #define PublishDir AddBackslash(SourcePath) + "..\dist\publish"
@@ -75,6 +76,7 @@ Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 
 [CustomMessages]
 french.LaunchApp=Lancer {#AppName}
+french.FirewallStatus=Autorisation du partage vers la TV dans le pare-feu Windows…
 french.RemoveDataQuestion=Supprimer aussi vos données personnelles ?%n%nTéléviseurs appairés, jetons d'accès chiffrés, certificat client VIDAA importé et journal des commandes.%n%nChoisissez « Non » pour les conserver (utile en cas de réinstallation).
 
 [Tasks]
@@ -88,7 +90,15 @@ Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Comment: "T�
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Comment: "Télécommande pour téléviseurs Hisense VIDAA"; Tasks: desktopicon
 
 [Run]
+; Pare-feu : la TV vient chercher les photos/vidéos partagées sur ce PC (DLNA). Règle limitée à l'exe, au
+; réseau privé et au sous-réseau local ; recréée à chaque mise à jour. Installation « pour moi seul » (sans
+; droits administrateur) : pas de règle, Windows demandera l'autorisation au premier partage.
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#FirewallRule}"""; Flags: runhidden; Check: IsAdminInstallMode
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""{#FirewallRule}"" dir=in action=allow program=""{app}\{#AppExeName}"" enable=yes profile=private remoteip=localsubnet protocol=TCP"; StatusMsg: "{cm:FirewallStatus}"; Flags: runhidden; Check: IsAdminInstallMode
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchApp}"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#FirewallRule}"""; Flags: runhidden; RunOnceId: "SupprimerRegleParefeu"; Check: IsAdminInstallMode
 
 [Code]
 // À la désinstallation : proposer (sans l'imposer) d'effacer les données de l'utilisateur,

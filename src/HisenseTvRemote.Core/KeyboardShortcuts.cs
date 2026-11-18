@@ -24,6 +24,8 @@ public enum ShortcutCommand
     OpenJournal,
     OpenSettings,
     OpenMouseMode,
+    /// <summary>Ouvre « Partager vers la TV » (photos, vidéos, musique en DLNA).</summary>
+    OpenShare,
     ShowHelp,
 }
 
@@ -108,6 +110,7 @@ public static class KeyboardShortcuts
         C("Ctrl + J", "Ouvrir le journal", "Application", ShortcutCommand.OpenJournal, KeyMods.Ctrl, "J"),
         C("Ctrl + T", "Ouvrir TV et réglages", "Application", ShortcutCommand.OpenSettings, KeyMods.Ctrl, "T"),
         C("F11", "Mode souris (plein écran)", "Application", ShortcutCommand.OpenMouseMode, KeyMods.None, "F11"),
+        C("Ctrl + P", "Partager photos, vidéos, musique vers la TV", "Application", ShortcutCommand.OpenShare, KeyMods.Ctrl, "P"),
         C("F1", "Aide des raccourcis", "Application", ShortcutCommand.ShowHelp, KeyMods.None, "F1"),
     ];
 
