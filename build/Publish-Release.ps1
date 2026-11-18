@@ -5,7 +5,8 @@
 .DESCRIPTION
     Équivalent en ligne de commande d'une compilation Release dans Visual Studio 2026 :
     version suivante (version.txt), compilation, publication autonome dans dist\publish\,
-    installeur Inno Setup dans dist\, à la même version, puis Release GitHub (tag + installeur).
+    installeur Inno Setup dans dist\ (pour essai), puis tag v<version> poussé sur GitHub, où le
+    workflow .github\workflows\release.yml compile, teste et publie la Release officielle.
     Voir contexte/publication.md.
 
 .PARAMETER NoBump
@@ -15,7 +16,7 @@
     Fixe la version (ex. 1.1.0.0), puis compile cette version telle quelle.
 
 .PARAMETER NoGitHub
-    Ne publie pas la Release sur GitHub (installeur local seulement).
+    Ne déclenche pas la Release GitHub (ni commit, ni tag, ni push) : installeur local seulement.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File build\Publish-Release.ps1

@@ -1,0 +1,142 @@
+# Release officielle de « VIDAA - Hisense » : compilation, tests, installeur Inno Setup, Release GitHub.
+#
+# Déclenchement :
+#   - automatique : push d'un tag v<version> (fait par une compilation Release dans Visual Studio,
+#     via build/Push-ReleaseTag.ps1) ;
+#   - manuel (onglet Actions → Release → Run workflow) :
+#       * avec un tag : reconstruit l'installeur de ce tag et le remplace dans la Release ;
+#       * sans tag, ou « Publier » décoché : ESSAI — tout est fait sauf la publication ; l'installeur
+#         est disponible 7 jours comme artefact du run.
+# Détail : contexte/publication.md.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag à construire (ex. v1.0.0.2). Vide : essai sur main, sans publication."
+        required: false
+        default: ''
+      publish:
+        description: "Publier la Release GitHub (décoché : essai, installeur en artefact)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+  # Inno Setup 7.1.1 (x64), installeur officiel signé (Pyrsys B.V.) ; empreinte vérifiée avant exécution.
+  INNO_URL: https://github.com/jrsoftware/issrc/releases/download/is-7_1_1/innosetup-7.1.1-x64.exe
+  INNO_SHA256: 8a5a6711c3766a6e5fb74f280ba0e3551e719ce94538d901fdbd1f8f9920b3f0
+  INNO_DIR: C:\InnoSetup7
+
+jobs:
+  release:
+    name: Installeur et Release
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.tag }}
+      PUBLISH: ${{ github.event_name == 'push' || (inputs.publish && inputs.tag != '') }}
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0          # historique et tags complets : notes depuis la Release précédente
+
+      - name: Installer .NET (SDK 11 + runtime 8 pour les tests)
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: |
+            8.0.x
+            11.0.x
+
+      - name: Vérifier la version
+        run: |
+          $v = (Get-Content version.txt -TotalCount 1).Trim()
+          [void][Version]::Parse($v)
+          if ($env:TAG -and "v$v" -ne $env:TAG) {
+            throw "version.txt ($v) ne correspond pas au tag $env:TAG."
+          }
+          "VERSION=$v" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "Version $v — tag « $env:TAG » — publication : $env:PUBLISH"
+
+      - name: Tests
+        run: dotnet test src/HisenseTvRemote.Tests --nologo
+
+      - name: Installer Inno Setup 7.1.1
+        run: |
+          $exe = Join-Path $env:RUNNER_TEMP 'innosetup.exe'
+          Invoke-WebRequest $env:INNO_URL -OutFile $exe
+          $hash = (Get-FileHash $exe -Algorithm SHA256).Hash
+          if ($hash -ne $env:INNO_SHA256) { throw "Empreinte SHA-256 inattendue pour Inno Setup : $hash" }
+          $p = Start-Process $exe -Wait -PassThru -ArgumentList `
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/ALLUSERS', "/DIR=`"$env:INNO_DIR`""
+          if ($p.ExitCode -ne 0) { throw "Installation d'Inno Setup échouée (code $($p.ExitCode))." }
+          if (-not (Test-Path "$env:INNO_DIR\ISCC.exe")) { throw "ISCC.exe introuvable dans $env:INNO_DIR." }
+
+      - name: Compiler, publier et créer l'installeur
+        run: >
+          dotnet build src/HisenseTvRemote/HisenseTvRemote.csproj -c Release --nologo
+          -p:HtrBump=false -p:HtrGitHub=false "-p:HtrIscc=$env:INNO_DIR\ISCC.exe"
+
+      - name: Contrôler l'installeur
+        run: |
+          $setup = "dist/VIDAA-Hisense-Setup-$env:VERSION.exe"
+          if (-not (Test-Path $setup)) { throw "Installeur absent : $setup" }
+          foreach ($f in 'dist/publish/HisenseTvRemote.exe', $setup) {
+            $fv = (Get-Item $f).VersionInfo.FileVersion.Trim()
+            if ($fv -ne $env:VERSION) { throw "$f : version $fv au lieu de $env:VERSION." }
+          }
+          # Rien de sensible ne doit partir dans l'installeur (certificat, clés, base, secrets).
+          $bad = Get-ChildItem dist/publish -Recurse -File -Force |
+            Where-Object { $_.Name -match '\.(pem|key|p12|pfx|bks|jks|db|db-wal|db-shm|log)$' -or $_.Name -like '.env*' }
+          if ($bad) { throw "Fichiers sensibles dans la publication : $($bad.Name -join ', ')" }
+          $mb = [Math]::Round((Get-Item $setup).Length / 1MB, 1)
+          Write-Host "Installeur conforme : $setup ($mb Mo)"
+          "SETUP=$setup" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Préparer les notes
+        run: ./build/New-ReleaseNotes.ps1 -Version $env:VERSION -Out "$env:RUNNER_TEMP/notes.md"
+
+      - name: Publier la Release GitHub
+        if: env.PUBLISH == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $env:TAG $env:SETUP --clobber
+            Write-Host "Installeur remplacé dans la Release $env:TAG."
+          } else {
+            gh release create $env:TAG $env:SETUP --verify-tag `
+              --title "VIDAA - Hisense $env:VERSION" --notes-file "$env:RUNNER_TEMP/notes.md"
+            Write-Host "Release $env:TAG publiée."
+          }
+
+      - name: Garder l'installeur (essai)
+        if: env.PUBLISH != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: VIDAA-Hisense-Setup-${{ env.VERSION }}-essai
+          path: |
+            ${{ env.SETUP }}
+            ${{ runner.temp }}/notes.md
+          retention-days: 7
+          if-no-files-found: error

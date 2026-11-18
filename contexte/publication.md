@@ -9,16 +9,16 @@
   2. compile ; **seulement si la compilation réussit**, écrit la version
      dans `version.txt` (un échec ne « consomme » pas de numéro) ;
   3. publie l'app autonome (win-x64, .NET inclus) dans `dist\publish\` ;
-  4. compile l'installeur Inno Setup à la même version :
-     `dist\VIDAA-Hisense-Setup-<version>.exe`.
+  4. compile l'installeur Inno Setup à la même version, **pour essai** :
+     `dist\VIDAA-Hisense-Setup-<version>.exe` ;
+  5. déclenche la **Release GitHub** : commit « Release <version> » de
+     `version.txt`, tag `v<version>`, push ; GitHub Actions recompile,
+     teste et publie la Release officielle (voir plus bas).
 - **Ligne de commande** (même résultat) : `build\Publish-Release.ps1`
   (`-NoBump` : recompiler la même version ; `-SetVersion 1.1.0.0` : fixer
-  la version, ex. pour passer en 1.1).
+  la version, ex. pour passer en 1.1 ; `-NoGitHub` : sans Release GitHub).
 - **Debug** : lit `version.txt`, n'incrémente jamais, ne produit pas
   d'installeur. Les tests (`dotnet test`) ne sont pas concernés.
-  5. publie la **Release GitHub** : commit « Release <version> » de
-     `version.txt`, push de `main`, tag `v<version>` et installeur joint
-     (voir plus bas).
 - `dist\` est généré et n'est **pas versionné** ; `version.txt`, lui, l'est
   (commité automatiquement par l'étape 5).
 
@@ -44,36 +44,72 @@
 - `installer/VidaaHisense.iss` : script de l'installeur.
 - `build/New-AppIcon.ps1` : régénère l'icône et les images de l'assistant.
 
-## Release GitHub automatique (depuis le 18/11)
+## Release GitHub : construite par GitHub Actions (depuis le 18/11)
 
-À la fin d'une compilation Release, `build/Publish-GitHubRelease.ps1` :
+### Côté poste : `build/Push-ReleaseTag.ps1` (fin d'une compilation Release)
 
-1. vérifie : `git` et GitHub CLI (`gh`) présents, `gh` connecté
-   (`gh auth login`), branche **`main`**, et **aucune autre modification non
-   commitée** que `version.txt` — le tag doit correspondre exactement au code
-   compilé ;
-2. commite `version.txt` (« Release 1.0.0.2 ») et pousse `main` ;
-3. crée la Release GitHub **`v<version>`** (titre « VIDAA - Hisense
-   <version> »), installeur `VIDAA-Hisense-Setup-<version>.exe` joint, notes
-   en français listant les commits depuis la Release précédente (sans les
-   réservations de zone ni les commits « Release ») ;
-4. si la Release existe déjà (recompilation `-NoBump`), remplace seulement
-   l'installeur.
+1. vérifie : `git` présent, branche **`main`**, **aucune autre modification
+   non commitée** que `version.txt` (le tag doit correspondre exactement au
+   code compilé) ;
+2. commite `version.txt` (« Release 1.0.0.2 ») et crée le tag annoté
+   `v1.0.0.2` ;
+3. pousse `main` puis le tag. **Le tag déclenche le workflow.**
 
+Plus besoin de GitHub CLI sur le poste (seulement `git` et l'accès au dépôt).
 **Jamais bloquant** : si une condition manque, la compilation réussit quand
 même avec un avertissement `HTR001` (liste d'erreurs de Visual Studio) qui
-dit pourquoi ; l'installeur reste dans `dist\`. Corriger, puis relancer avec
-`build\Publish-Release.ps1 -NoBump` (republie la même version).
+dit pourquoi. Corriger, puis relancer avec `build\Publish-Release.ps1
+-NoBump` (même version). Si le tag est déjà sur GitHub, rien n'est recompilé :
+relancer le workflow à la main (ci-dessous).
 
+### Côté GitHub : `.github/workflows/release.yml`
+
+Sur une machine Windows neuve (`windows-latest`) :
+
+1. récupère le code **du tag** (historique complet pour les notes) ;
+2. installe .NET (SDK 11, runtime 8 pour les tests) ;
+3. vérifie que `version.txt` = tag (sinon échec) ;
+4. lance **les tests** : un test en échec = pas de Release ;
+5. installe **Inno Setup 7.1.1** depuis le dépôt officiel, après contrôle de
+   l'empreinte SHA-256 (installeur signé Pyrsys B.V.) ;
+6. compile en Release (`-p:HtrBump=false -p:HtrGitHub=false`) : publication
+   autonome + installeur ;
+7. contrôle l'installeur : version de l'exe et du setup = tag, **aucun
+   fichier sensible** publié (`.pem`, `.key`, `.p12`, `.db`, `.env`…) ;
+8. écrit les notes en français (`build/New-ReleaseNotes.ps1` : commits
+   depuis la Release précédente, sans les réservations de zone ni les
+   commits « Release ») ;
+9. crée la Release `v<version>` (« VIDAA - Hisense <version> ») avec
+   l'installeur ; si elle existe déjà, remplace seulement l'installeur.
+
+Durée ~5 à 8 min. Suivi : onglet **Actions** du dépôt (`gh run watch`).
+Dépôt privé : minutes Windows décomptées ×2 sur le quota gratuit.
+
+**Lancement manuel** (Actions → Release → Run workflow) :
+- avec un tag (`v1.0.0.2`) : reconstruit l'installeur de ce tag et le
+  remplace dans la Release ;
+- sans tag, ou « Publier » décoché : **essai** sur `main`, tout sauf la
+  publication ; installeur gardé 7 jours comme artefact du run
+  (`gh workflow run release.yml -f publish=false`).
+
+### À savoir
+
+- L'installeur officiel est **celui de GitHub** ; celui de `dist\` sert aux
+  essais locaux (même code, même version).
 - Désactiver : `-p:HtrGitHub=false` (MSBuild) ou `-NoGitHub` (script).
 - Dépôt privé → Releases privées aussi (téléchargement réservé aux comptes
   ayant accès).
-- **Exception à la règle des sessions** : ce commit « Release » de
-  `version.txt` se fait directement sur `main` (c'est la Release elle-même).
-  Une Release lancée depuis un dossier de travail (autre branche) n'est pas
-  publiée : fusionner d'abord dans `main`.
+- **Exception à la règle des sessions** : le commit « Release » de
+  `version.txt` et le tag se font directement sur `main` (c'est la Release
+  elle-même). Une Release lancée depuis un dossier de travail (autre
+  branche) n'est pas déclenchée : fusionner d'abord dans `main`.
 - Messages en UTF-8 (`[Console]::OutputEncoding` + `StdOutEncoding` de
   l'`Exec`) : accents lisibles dans la fenêtre Sortie de Visual Studio.
+- Mettre à jour Inno Setup dans le workflow : changer `INNO_URL` et
+  `INNO_SHA256` (`Get-FileHash` de l'installeur téléchargé, après avoir
+  vérifié sa signature).
+- Historique : v1.0.0.0 et v1.0.0.1 ont été publiées avec l'installeur
+  compilé sur le poste (avant le workflow).
 
 ## Piège Visual Studio : « Générer » ne fait rien si rien n'a changé
 
