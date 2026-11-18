@@ -71,6 +71,7 @@ public class DlnaTests : IDisposable
         Assert.Contains("<dc:title>Tom &amp; Jerry &lt;1&gt;</dc:title>", didl);
         Assert.Contains("http://pc:1/media/x.jpg?a=1&amp;b=2</res>", didl);
         Assert.Contains("<upnp:class>object.item.imageItem.photo</upnp:class>", didl);
+        Assert.Contains("duration=\"0:56:20.608\"", DlnaRenderer.Didl("u", "t", MediaTypes.Of("a.mp4")!, new TimeSpan(0, 0, 56, 20, 608)));
         _ = System.Xml.Linq.XDocument.Parse(didl);                                                 // XML valide
     }
 
@@ -177,8 +178,11 @@ public class DlnaTests : IDisposable
         public event Action<string>? RequestServed;
         public TimeSpan? BufferedUntil(TimeSpan position, TimeSpan? duration) => Loaded;
 
-        public Task ShowAsync(string path, MediaType type, string title, CancellationToken ct = default)
+        public TimeSpan? LastDuration { get; private set; }
+
+        public Task ShowAsync(string path, MediaType type, string title, TimeSpan? duration = null, CancellationToken ct = default)
         {
+            LastDuration = duration;
             Calls.Add($"show {Path.GetFileName(path)} {type.Kind}");
             Info = new PlaybackInfo("TRANSITIONING", null, null);
             if (!Blocked) RequestServed?.Invoke("GET");
@@ -196,7 +200,8 @@ public class DlnaTests : IDisposable
     {
         var player = new FakePlayer();
         var now = new DateTime(2026, 11, 18, 12, 0, 0, DateTimeKind.Utc);
-        var vm = new ShareViewModel(() => player, (p, _) => Task.FromResult(p.Replace(".heic", ".converti.jpg")), () => now);
+        var vm = new ShareViewModel(() => player, (p, _) => Task.FromResult(p.Replace(".heic", ".converti.jpg")), () => now,
+            p => p.EndsWith(".jpg") ? throw new InvalidOperationException("pas de durée pour une photo") : TimeSpan.FromMinutes(56));
         return (vm, player, d => now = d);
     }
 
@@ -247,10 +252,12 @@ public class DlnaTests : IDisposable
         vm.Add([File("film.mp4")]);
         await vm.ShowSelectedAsync();
         var t = new DateTime(2026, 11, 18, 12, 0, 0, DateTimeKind.Utc);
-        Assert.False(vm.CanSeekBar);                                                               // durée encore inconnue
-        Assert.Equal("--:--", vm.DurationText);
+        // La TV ne donne pas la durée (toujours 0) : celle lue par l'app est gardée et transmise à la TV.
+        Assert.True(vm.CanSeekBar);
+        Assert.Equal("56:00", vm.DurationText);
+        Assert.Equal(TimeSpan.FromMinutes(56), player.LastDuration);
 
-        player.Info = new PlaybackInfo("PLAYING", TimeSpan.FromSeconds(12), TimeSpan.FromMinutes(56));
+        player.Info = new PlaybackInfo("PLAYING", TimeSpan.FromSeconds(12), null);
         advance(t = t.AddSeconds(2)); await vm.TickAsync();
         Assert.Equal((12d, 3360d, "0:12", "56:00"), (vm.PositionSeconds, vm.DurationSeconds, vm.ElapsedText, vm.DurationText));
         Assert.True(vm.CanSeekBar);

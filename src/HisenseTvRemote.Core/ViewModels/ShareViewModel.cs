@@ -43,12 +43,14 @@ public sealed partial class ShareItem(string path, MediaType type) : ObservableO
 /// Écran « Partager vers la TV » : liste de photos, vidéos et musiques envoyées à la TV par DLNA, avec
 /// suivant/précédent, diaporama, lecture/pause/stop, avance/recul et enchaînement automatique.
 /// Le lecteur est créé au premier envoi (<paramref name="playerFactory"/>) ; les photos passent par
-/// <paramref name="preparePhoto"/> (conversion HEIC, orientation, taille) avant l'envoi.
+/// <paramref name="preparePhoto"/> (conversion HEIC, orientation, taille) avant l'envoi. La durée des
+/// vidéos vient de <paramref name="durationOf"/> : la 55A53FXVT renvoie toujours 0 (TrackDuration).
 /// </summary>
 public sealed partial class ShareViewModel(
     Func<IMediaPlayer> playerFactory,
     Func<string, CancellationToken, Task<string>>? preparePhoto = null,
-    Func<DateTime>? clock = null) : ObservableObject, IAsyncDisposable
+    Func<DateTime>? clock = null,
+    Func<string, TimeSpan?>? durationOf = null) : ObservableObject, IAsyncDisposable
 {
     /// <summary>Sans signe de lecture de la TV au bout de ce délai, le diaporama démarre quand même.</summary>
     private static readonly TimeSpan DisplayFallback = TimeSpan.FromSeconds(20);
@@ -214,6 +216,8 @@ public sealed partial class ShareViewModel(
             _fetchChecked = false;
             Report($"Envoi de « {item.Name} » à la TV…", false);
 
+            var duration = item.Kind == MediaKind.Photo ? null : durationOf?.Invoke(item.Path);
+            if (duration is { } known && known > TimeSpan.Zero) DurationSeconds = known.TotalSeconds;
             var path = item.Path;
             if (item.Kind == MediaKind.Photo && preparePhoto is not null)
                 path = await preparePhoto(item.Path, CancellationToken.None);
@@ -222,7 +226,7 @@ public sealed partial class ShareViewModel(
                 _player = playerFactory();
                 _player.RequestServed += _ => _fetched = true;
             }
-            await _player.ShowAsync(path, item.Type, Path.GetFileNameWithoutExtension(item.Name));
+            await _player.ShowAsync(path, item.Type, Path.GetFileNameWithoutExtension(item.Name), duration);
             _sentAt = _now();
             Report(item.Kind == MediaKind.Photo
                 ? $"« {item.Name} » envoyée : la TV l'affiche (quelques secondes la première fois)."
@@ -347,13 +351,15 @@ public sealed partial class ShareViewModel(
                 _displayedAt ??= now;
             }
             IsPlaying = info.IsPlaying;
+            // Durée : celle de la TV si elle la donne, sinon celle lue par l'app (la 55A53FXVT renvoie 0).
+            if (IsMedia && info.Duration is { } d && d > TimeSpan.Zero) DurationSeconds = d.TotalSeconds;
             if (IsMedia && !IsDragging && now >= _ignorePositionUntil)
             {
-                PositionText = info.Position is { } p ? FormatPosition(p, info.Duration) : "";
+                PositionText = info.Position is { } p ? FormatPosition(p, DurationSeconds > 0 ? TimeSpan.FromSeconds(DurationSeconds) : info.Duration) : "";
                 PositionSeconds = info.Position?.TotalSeconds ?? 0;
             }
-            if (IsMedia && info.Duration is { } d && d > TimeSpan.Zero) DurationSeconds = d.TotalSeconds;
-            if (IsMedia && _player.BufferedUntil(TimeSpan.FromSeconds(PositionSeconds), info.Duration) is { } loaded)
+            var length = DurationSeconds > 0 ? TimeSpan.FromSeconds(DurationSeconds) : info.Duration;
+            if (IsMedia && _player.BufferedUntil(TimeSpan.FromSeconds(PositionSeconds), length) is { } loaded)
                 BufferedSeconds = Math.Max(PositionSeconds, Math.Min(loaded.TotalSeconds, DurationSeconds > 0 ? DurationSeconds : loaded.TotalSeconds));
 
             // Fin d'une vidéo/musique (et pas un Stop demandé) : fichier suivant, s'il y en a un.

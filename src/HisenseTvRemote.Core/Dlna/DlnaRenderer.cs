@@ -117,9 +117,9 @@ public sealed class DlnaRenderer
 
     // ---------- Commandes AVTransport ------------------------------------------------------------
 
-    public Task SetUriAsync(string url, string title, MediaType type, CancellationToken ct = default) =>
+    public Task SetUriAsync(string url, string title, MediaType type, TimeSpan? duration = null, CancellationToken ct = default) =>
         InvokeAsync("SetAVTransportURI",
-            $"<CurrentURI>{SecurityElement.Escape(url)}</CurrentURI><CurrentURIMetaData>{SecurityElement.Escape(Didl(url, title, type))}</CurrentURIMetaData>", ct);
+            $"<CurrentURI>{SecurityElement.Escape(url)}</CurrentURI><CurrentURIMetaData>{SecurityElement.Escape(Didl(url, title, type, duration))}</CurrentURIMetaData>", ct);
 
     public Task PlayAsync(CancellationToken ct = default) => InvokeAsync("Play", "<Speed>1</Speed>", ct);
     public Task PauseAsync(CancellationToken ct = default) => InvokeAsync("Pause", "", ct);
@@ -137,12 +137,14 @@ public sealed class DlnaRenderer
     }
 
     /// <summary>Métadonnées DIDL-Lite du fichier : titre, genre UPnP et protocolInfo (exigés par beaucoup de TV).</summary>
-    public static string Didl(string url, string title, MediaType type) =>
+    public static string Didl(string url, string title, MediaType type, TimeSpan? duration = null) =>
         "<DIDL-Lite xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" " +
         "xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\">" +
         $"<item id=\"1\" parentID=\"0\" restricted=\"1\"><dc:title>{SecurityElement.Escape(title)}</dc:title>" +
         $"<upnp:class>{type.UpnpClass}</upnp:class>" +
-        $"<res protocolInfo=\"{SecurityElement.Escape(type.ProtocolInfo)}\">{SecurityElement.Escape(url)}</res></item></DIDL-Lite>";
+        $"<res protocolInfo=\"{SecurityElement.Escape(type.ProtocolInfo)}\"" +
+        (duration is { } d && d > TimeSpan.Zero ? $" duration=\"{FormatTime(d)}.{d.Milliseconds:000}\"" : "") +
+        $">{SecurityElement.Escape(url)}</res></item></DIDL-Lite>";
 
     /// <summary>« H:MM:SS » (format UPnP).</summary>
     public static string FormatTime(TimeSpan t)

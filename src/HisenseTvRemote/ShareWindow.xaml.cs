@@ -27,7 +27,7 @@ public partial class ShareWindow : Window
     {
         InitializeComponent();
         _app = app;
-        _vm = new ShareViewModel(CreatePlayer, _photos.PrepareAsync);
+        _vm = new ShareViewModel(CreatePlayer, _photos.PrepareAsync, durationOf: MediaDuration.Of);
         DataContext = _vm;
         TvLabel.Text = $"Vers « {_app.Remote.CurrentTv ?? "?"} » — la TV va chercher les fichiers sur ce PC (réseau local).";
         if (files is not null) AddFiles(files);

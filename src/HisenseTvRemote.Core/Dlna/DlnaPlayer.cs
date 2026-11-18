@@ -5,8 +5,8 @@ namespace HisenseTvRemote.Core.Dlna;
 /// <summary>Ce que l'écran « Partager vers la TV » demande au lecteur (remplacé par un faux dans les tests).</summary>
 public interface IMediaPlayer : IAsyncDisposable
 {
-    /// <summary>Envoie le fichier à la TV et lance l'affichage / la lecture.</summary>
-    Task ShowAsync(string path, MediaType type, string title, CancellationToken ct = default);
+    /// <summary>Envoie le fichier à la TV et lance l'affichage / la lecture (durée annoncée si connue).</summary>
+    Task ShowAsync(string path, MediaType type, string title, TimeSpan? duration = null, CancellationToken ct = default);
     Task PlayAsync(CancellationToken ct = default);
     Task PauseAsync(CancellationToken ct = default);
     Task StopAsync(CancellationToken ct = default);
@@ -52,7 +52,7 @@ public sealed class DlnaPlayer(IPAddress tv, HttpClient http) : IMediaPlayer
         return _renderer;
     }
 
-    public async Task ShowAsync(string path, MediaType type, string title, CancellationToken ct = default)
+    public async Task ShowAsync(string path, MediaType type, string title, TimeSpan? duration = null, CancellationToken ct = default)
     {
         var renderer = await RendererAsync(ct).ConfigureAwait(false);
         var content = await ContentForAsync(path, type).ConfigureAwait(false);
@@ -60,12 +60,12 @@ public sealed class DlnaPlayer(IPAddress tv, HttpClient http) : IMediaPlayer
         _current = content;
         _published.Enqueue(url);
         while (_published.Count > KeepPublished) _server.Unpublish(_published.Dequeue());
-        try { await renderer.SetUriAsync(url, title, type, ct).ConfigureAwait(false); }
+        try { await renderer.SetUriAsync(url, title, type, duration, ct).ConfigureAwait(false); }
         catch (DlnaException)
         {
             // Certains lecteurs refusent de changer de fichier en cours de lecture (erreur 701) : arrêt puis reprise.
             await renderer.StopAsync(ct).ConfigureAwait(false);
-            await renderer.SetUriAsync(url, title, type, ct).ConfigureAwait(false);
+            await renderer.SetUriAsync(url, title, type, duration, ct).ConfigureAwait(false);
         }
         await renderer.PlayAsync(ct).ConfigureAwait(false);
     }
