@@ -46,6 +46,13 @@
     <!-- 1. La compilation a réussi : la version est acquise. -->
     <WriteLinesToFile File="$(HtrVersionFile)" Lines="$(_HtrVersion)" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
+    <!-- FFmpeg (conversion des TS, MKV…) : récupéré s'il manque ; sans lui, avertissement et installeur sans conversion. -->
+    <Exec Condition="!Exists('$(HtrRoot)third_party\ffmpeg\ffmpeg.exe')" ContinueOnError="true"
+          StdOutEncoding="utf-8" StdErrEncoding="utf-8"
+          Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(HtrRoot)build\Get-FFmpeg.ps1&quot;" />
+    <Warning Condition="!Exists('$(HtrRoot)third_party\ffmpeg\ffmpeg.exe')"
+             Text="FFmpeg absent : l'installeur ne pourra pas convertir les vidéos TS, MKV, AVI (lancez build\Get-FFmpeg.ps1)." />
+
     <!-- 2. Publication autonome win-x64, à la même version, dans un dossier propre. -->
     <RemoveDir Directories="$(HtrDistDir)publish" />
     <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="Publish"

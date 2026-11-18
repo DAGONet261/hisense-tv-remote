@@ -90,6 +90,11 @@ jobs:
           if ($p.ExitCode -ne 0) { throw "Installation d'Inno Setup échouée (code $($p.ExitCode))." }
           if (-not (Test-Path "$env:INNO_DIR\ISCC.exe")) { throw "ISCC.exe introuvable dans $env:INNO_DIR." }
 
+      - name: Récupérer FFmpeg (LGPL, empreinte vérifiée)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./build/Get-FFmpeg.ps1
+
       - name: Compiler, publier et créer l'installeur
         run: >
           dotnet build src/HisenseTvRemote/HisenseTvRemote.csproj -c Release --nologo
@@ -99,6 +104,9 @@ jobs:
         run: |
           $setup = "dist/VIDAA-Hisense-Setup-$env:VERSION.exe"
           if (-not (Test-Path $setup)) { throw "Installeur absent : $setup" }
+          foreach ($f in 'dist/publish/ffmpeg/ffmpeg.exe', 'dist/publish/ffmpeg/ffprobe.exe') {
+            if (-not (Test-Path $f)) { throw "FFmpeg absent de la publication : $f" }
+          }
           foreach ($f in 'dist/publish/HisenseTvRemote.exe', $setup) {
             $fv = (Get-Item $f).VersionInfo.FileVersion.Trim()
             if ($fv -ne $env:VERSION) { throw "$f : version $fv au lieu de $env:VERSION." }

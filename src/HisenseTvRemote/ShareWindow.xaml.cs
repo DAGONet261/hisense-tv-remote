@@ -20,6 +20,7 @@ public partial class ShareWindow : Window
 
     private readonly AppServices _app;
     private readonly PhotoPreparer _photos = new();
+    private readonly VideoRemuxer? _videos = FfmpegLocator.Find() is { } ff ? new VideoRemuxer(ff.Ffmpeg, ff.Ffprobe) : null;
     private readonly ShareViewModel _vm;
     private readonly CancellationTokenSource _monitor = new();
 
@@ -27,8 +28,12 @@ public partial class ShareWindow : Window
     {
         InitializeComponent();
         _app = app;
-        _vm = new ShareViewModel(CreatePlayer, _photos.PrepareAsync, durationOf: MediaDuration.Of);
+        _vm = new ShareViewModel(CreatePlayer, _photos.PrepareAsync, durationOf: MediaDuration.Of, prepareVideo: _videos is null ? null : _videos.RemuxAsync);
         DataContext = _vm;
+        // Un clic sur la piste est traité (Handled) par le Slider lui-même (IsMoveToPointEnabled) : on
+        // s'abonne aussi aux événements déjà traités, sinon seul le glissement du curseur déclenchait un saut.
+        SeekBar.AddHandler(PreviewMouseLeftButtonDownEvent, new MouseButtonEventHandler(OnSeekBarDown), handledEventsToo: true);
+        SeekBar.AddHandler(PreviewMouseLeftButtonUpEvent, new MouseButtonEventHandler(OnSeekBarUp), handledEventsToo: true);
         TvLabel.Text = $"Vers « {_app.Remote.CurrentTv ?? "?"} » — la TV va chercher les fichiers sur ce PC (réseau local).";
         if (files is not null) AddFiles(files);
     }
@@ -81,6 +86,7 @@ public partial class ShareWindow : Window
         _monitor.Cancel();
         await _vm.DisposeAsync();
         _photos.Dispose();
+        _videos?.Dispose();
         _monitor.Dispose();
     }
 

@@ -358,6 +358,78 @@ public class DlnaTests : IDisposable
         Assert.False(ok.FirewallSuspected);
     }
 
+    // ---------- Conversion des vidéos (TS, MKV…) -----------------------------------------------
+
+    [Fact]
+    public void Conversion_choix_des_pistes_et_des_codecs()
+    {
+        Assert.True(VideoRemuxer.NeedsRemux("film.ts"));
+        Assert.True(VideoRemuxer.NeedsRemux("film.MKV"));
+        Assert.True(VideoRemuxer.NeedsRemux("film.avi"));
+        Assert.False(VideoRemuxer.NeedsRemux("film.mp4"));                                         // réorganisé à la volée
+        Assert.False(VideoRemuxer.NeedsRemux("photo.jpg"));
+
+        // Sortie réelle de ffprobe (MKV YouTube : VP9 + Opus), avec pochette et sous-titres.
+        var probe = VideoRemuxer.ParseProbe(
+            "index=0|codec_name=mjpeg|codec_type=video\r\n" +
+            "index=1|codec_name=vp9|codec_type=video\r\n" +
+            "index=2|codec_name=opus|codec_type=audio\r\n" +
+            "index=3|codec_name=subrip|codec_type=subtitle\r\n");
+        Assert.Equal(new VideoProbe("vp9", "opus"), probe);
+
+        var vp9 = VideoRemuxer.BuildArguments("in.mkv", "out.mp4", probe);
+        Assert.Equal(["-c:v", "copy"], vp9.Skip(vp9.IndexOf("-c:v")).Take(2));                    // image intacte
+        Assert.Equal(["-c:a", "aac"], vp9.Skip(vp9.IndexOf("-c:a")).Take(2));                      // Opus → AAC
+        Assert.Equal("out.mp4", vp9[^1]);
+        Assert.Contains("0:a:0?", vp9);                                                            // son facultatif
+
+        var ts = VideoRemuxer.BuildArguments("in.ts", "out.mp4", new VideoProbe("h264", "aac"));
+        Assert.Equal(["-c:a", "copy"], ts.Skip(ts.IndexOf("-c:a")).Take(2));
+        Assert.Contains("hvc1", VideoRemuxer.BuildArguments("in.mkv", "o.mp4", new VideoProbe("hevc", "ac3")));
+        Assert.Throws<NotSupportedException>(() => VideoRemuxer.BuildArguments("in.mkv", "o.mp4", new VideoProbe("av1", "opus")));
+        Assert.Throws<NotSupportedException>(() => VideoRemuxer.BuildArguments("in.mkv", "o.mp4", new VideoProbe(null, "mp3")));
+
+        Assert.Equal(TimeSpan.FromSeconds(1.5), VideoRemuxer.ParseProgress("out_time_us=1500000"));
+        Assert.Null(VideoRemuxer.ParseProgress("progress=continue"));
+        Assert.Null(VideoRemuxer.ParseProgress("out_time_us=N/A"));
+    }
+
+    [Fact]
+    public async Task Preparation_video_progression_puis_envoi_ou_annulation()
+    {
+        var player = new FakePlayer();
+        var seen = new List<double>();
+        var gate = new TaskCompletionSource();
+        var vm = new ShareViewModel(() => player, null, null, _ => TimeSpan.FromMinutes(2),
+            async (path, duration, progress, ct) =>
+            {
+                Assert.Equal(TimeSpan.FromMinutes(2), duration);
+                progress.Report(0.5);
+                if (path.EndsWith("lent.mkv")) await Task.Delay(Timeout.Infinite, ct);
+                await gate.Task;
+                return path.Replace(".ts", ".converti.mp4");
+            });
+        vm.Add([File("film.ts"), File("lent.mkv")]);
+        vm.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(vm.PrepareProgress)) seen.Add(vm.PrepareProgress); };
+
+        var show = vm.ShowAsync(vm.Items[0]);
+        await Task.Delay(50);
+        Assert.True(vm.IsPreparing);
+        gate.SetResult();
+        await show;
+        Assert.False(vm.IsPreparing);
+        Assert.Equal("show film.converti.mp4 Video", player.Calls[^1]);                           // MP4 converti envoyé
+        Assert.Contains(0.5, seen);
+
+        var slow = vm.ShowAsync(vm.Items[1]);
+        await Task.Delay(50);
+        await vm.StopAsync();                                                                      // Stop = annuler
+        await slow;
+        Assert.Equal("show film.converti.mp4 Video", player.Calls[^1]);                           // rien envoyé
+        Assert.Contains("annulée", vm.Status);
+        Assert.False(vm.LastFailed);
+    }
+
     [Fact]
     public async Task Diaporama_au_rythme_choisi()
     {

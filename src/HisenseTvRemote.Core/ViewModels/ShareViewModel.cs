@@ -45,12 +45,14 @@ public sealed partial class ShareItem(string path, MediaType type) : ObservableO
 /// Le lecteur est créé au premier envoi (<paramref name="playerFactory"/>) ; les photos passent par
 /// <paramref name="preparePhoto"/> (conversion HEIC, orientation, taille) avant l'envoi. La durée des
 /// vidéos vient de <paramref name="durationOf"/> : la 55A53FXVT renvoie toujours 0 (TrackDuration).
+/// Les vidéos TS, MKV, AVI… passent par <paramref name="prepareVideo"/> (conversion en MP4, progression).
 /// </summary>
 public sealed partial class ShareViewModel(
     Func<IMediaPlayer> playerFactory,
     Func<string, CancellationToken, Task<string>>? preparePhoto = null,
     Func<DateTime>? clock = null,
-    Func<string, TimeSpan?>? durationOf = null) : ObservableObject, IAsyncDisposable
+    Func<string, TimeSpan?>? durationOf = null,
+    Func<string, TimeSpan?, IProgress<double>, CancellationToken, Task<string>>? prepareVideo = null) : ObservableObject, IAsyncDisposable
 {
     /// <summary>Sans signe de lecture de la TV au bout de ce délai, le diaporama démarre quand même.</summary>
     private static readonly TimeSpan DisplayFallback = TimeSpan.FromSeconds(20);
@@ -69,6 +71,7 @@ public sealed partial class ShareViewModel(
     private volatile bool _fetched;
     /// <summary>Après un saut, la TV renvoie encore l'ancienne position un court instant : on l'ignore.</summary>
     private DateTime _ignorePositionUntil;
+    private CancellationTokenSource? _prepareCts;
     private bool _fetchChecked;
 
     public ObservableCollection<ShareItem> Items { get; } = [];
@@ -94,6 +97,13 @@ public sealed partial class ShareViewModel(
 
     [ObservableProperty]
     private bool _isPlaying;
+
+    /// <summary>Conversion en cours avant l'envoi (TS, MKV…) ; <see cref="PrepareProgress"/> de 0 à 1.</summary>
+    [ObservableProperty]
+    private bool _isPreparing;
+
+    [ObservableProperty]
+    private double _prepareProgress;
 
     [ObservableProperty]
     private string _positionText = "";
@@ -219,18 +229,43 @@ public sealed partial class ShareViewModel(
             var duration = item.Kind == MediaKind.Photo ? null : durationOf?.Invoke(item.Path);
             if (duration is { } known && known > TimeSpan.Zero) DurationSeconds = known.TotalSeconds;
             var path = item.Path;
+            var type = item.Type;
             if (item.Kind == MediaKind.Photo && preparePhoto is not null)
                 path = await preparePhoto(item.Path, CancellationToken.None);
+            else if (item.Kind == MediaKind.Video && prepareVideo is not null && VideoRemuxer.NeedsRemux(item.Path))
+            {
+                // TV : refuse ces enveloppes, lit le même contenu en MP4 → conversion sans réencodage de l'image.
+                using var cts = new CancellationTokenSource();
+                _prepareCts = cts;
+                IsPreparing = true;
+                PrepareProgress = 0;
+                Report($"Préparation de « {item.Name} » pour la TV… (Stop pour annuler)", false);
+                var progress = new Progress<double>(v =>
+                {
+                    if (!IsPreparing) return;
+                    PrepareProgress = v;
+                    Status = $"Préparation de « {item.Name} » pour la TV… {v.ToString("P0", CultureInfo.GetCultureInfo("fr-FR"))} (Stop pour annuler)";
+                });
+                try { path = await prepareVideo(item.Path, duration, progress, cts.Token); }
+                finally { IsPreparing = false; _prepareCts = null; }
+                type = MediaTypes.Of(path) ?? type;
+            }
             if (_player is null)
             {
                 _player = playerFactory();
                 _player.RequestServed += _ => _fetched = true;
             }
-            await _player.ShowAsync(path, item.Type, Path.GetFileNameWithoutExtension(item.Name), duration);
+            await _player.ShowAsync(path, type, Path.GetFileNameWithoutExtension(item.Name), duration);
             _sentAt = _now();
             Report(item.Kind == MediaKind.Photo
                 ? $"« {item.Name} » envoyée : la TV l'affiche (quelques secondes la première fois)."
                 : $"« {item.Name} » envoyée : la TV lance la lecture.", false);
+        }
+        catch (OperationCanceledException)
+        {
+            if (Current is not null) Current.IsCurrent = false;
+            Current = null;
+            Report($"Préparation de « {item.Name} » annulée.", false);
         }
         catch (Exception ex) when (ex is DlnaException or IOException or UnauthorizedAccessException or InvalidOperationException
                                        or NotSupportedException or System.Net.Sockets.SocketException or HttpRequestException)
@@ -271,7 +306,13 @@ public sealed partial class ShareViewModel(
     });
 
     [RelayCommand]
-    public Task StopAsync() => WithPlayerAsync("Stop", async p =>
+    public Task StopAsync()
+    {
+        if (_prepareCts is { } prep) { prep.Cancel(); return Task.CompletedTask; }      // annule la préparation
+        return StopPlaybackAsync();
+    }
+
+    private Task StopPlaybackAsync() => WithPlayerAsync("Stop", async p =>
     {
         _userStopped = true;
         Slideshow = false;
@@ -420,6 +461,7 @@ public sealed partial class ShareViewModel(
     /// <summary>Arrête la lecture sur la TV (si on avait envoyé quelque chose) et le serveur local.</summary>
     public async ValueTask DisposeAsync()
     {
+        _prepareCts?.Cancel();
         if (_player is null) return;
         if (Current is not null)
         {

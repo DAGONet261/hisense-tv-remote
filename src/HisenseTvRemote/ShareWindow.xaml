@@ -118,8 +118,25 @@
 
         <!-- ===================== Barre d'état ===================== -->
         <DockPanel DockPanel.Dock="Bottom" Margin="2,10,2,0">
-            <ProgressBar DockPanel.Dock="Right" Width="90" Height="4" IsIndeterminate="True"
-                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}"/>
+            <!-- Préparation d'une vidéo (TS, MKV…) : progression réelle ; sinon, simple indicateur d'activité. -->
+            <ProgressBar DockPanel.Dock="Right" Width="140" Height="6" Minimum="0" Maximum="1" Value="{Binding PrepareProgress}"
+                         Visibility="{Binding IsPreparing, Converter={StaticResource BoolToVisibility}}"/>
+            <ProgressBar DockPanel.Dock="Right" Width="90" Height="4" IsIndeterminate="True">
+                <ProgressBar.Style>
+                    <Style TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsBusy}" Value="True"/>
+                                    <Condition Binding="{Binding IsPreparing}" Value="False"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ProgressBar.Style>
+            </ProgressBar>
             <TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" FontSize="12">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
@@ -150,7 +167,7 @@
                         Maximum="{Binding DurationSeconds}" Value="{Binding PositionSeconds}" IsEnabled="{Binding CanSeekBar}"
                         AutomationProperties.Name="Position dans la vidéo"
                         ToolTip="Cliquez ou faites glisser pour aller à un moment précis"
-                        PreviewMouseLeftButtonDown="OnSeekBarDown" PreviewMouseLeftButtonUp="OnSeekBarUp" LostMouseCapture="OnSeekBarLostCapture"/>
+                        LostMouseCapture="OnSeekBarLostCapture"/>
                 </Grid>
             </DockPanel>
             <Grid>
@@ -205,7 +222,7 @@
                         </Button.Style>
                     </Button>
                     <Button AutomationProperties.Name="Arrêter" Style="{StaticResource IconButton}" Content="&#xE71A;"
-                            Command="{Binding StopCommand}" ToolTip="Arrêter l'affichage / la lecture sur la TV"/>
+                            Command="{Binding StopCommand}" ToolTip="Arrêter l'affichage / la lecture sur la TV, ou annuler la préparation d'une vidéo"/>
                     <Button AutomationProperties.Name="Avancer de 10 secondes" Style="{StaticResource SmallButton}" Content="+10 s"
                             Visibility="{Binding IsMedia, Converter={StaticResource BoolToVisibility}}"
                             Command="{Binding SeekByCommand}" ToolTip="Avancer de 10 secondes (Ctrl + →)">
