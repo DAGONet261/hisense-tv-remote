@@ -65,6 +65,8 @@ public sealed partial class ShareViewModel(
     private bool _sawPlaying;
     private bool _userStopped;
     private volatile bool _fetched;
+    /// <summary>Après un saut, la TV renvoie encore l'ancienne position un court instant : on l'ignore.</summary>
+    private DateTime _ignorePositionUntil;
     private bool _fetchChecked;
 
     public ObservableCollection<ShareItem> Items { get; } = [];
@@ -93,6 +95,24 @@ public sealed partial class ShareViewModel(
 
     [ObservableProperty]
     private string _positionText = "";
+
+    /// <summary>Barre de progression : position (secondes), suivie de la TV sauf pendant un glissement.</summary>
+    [ObservableProperty]
+    private double _positionSeconds;
+
+    /// <summary>Durée de la vidéo/musique (secondes) ; 0 si la TV ne l'indique pas encore.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DurationText), nameof(CanSeekBar))]
+    private double _durationSeconds;
+
+    /// <summary>L'utilisateur fait glisser la barre : la position de la TV n'est plus recopiée.</summary>
+    public bool IsDragging { get; set; }
+
+    public string ElapsedText => Short(TimeSpan.FromSeconds(PositionSeconds));
+    public string DurationText => DurationSeconds > 0 ? Short(TimeSpan.FromSeconds(DurationSeconds)) : "--:--";
+    public bool CanSeekBar => DurationSeconds > 0;
+
+    partial void OnPositionSecondsChanged(double value) => OnPropertyChanged(nameof(ElapsedText));
 
     /// <summary>
     /// Le pare-feu Windows empêche sans doute la TV de télécharger les fichiers : la vue propose de
@@ -180,6 +200,8 @@ public sealed partial class ShareViewModel(
             item.IsCurrent = true;
             IsPlaying = false;
             PositionText = "";
+            PositionSeconds = 0;
+            DurationSeconds = 0;
             _sawPlaying = false;
             _userStopped = false;
             _displayedAt = null;
@@ -259,9 +281,26 @@ public sealed partial class ShareViewModel(
         if (target < TimeSpan.Zero) target = TimeSpan.Zero;
         if (info.Duration is { } d && d > TimeSpan.Zero && target > d - TimeSpan.FromSeconds(1)) target = d - TimeSpan.FromSeconds(1);
         await p.SeekAsync(target);
-        PositionText = FormatPosition(target, info.Duration);
+        ShowSeek(target, info.Duration);
         Report($"{(seconds < 0 ? "Recul" : "Avance")} de {Math.Abs(seconds)} s ({DlnaRenderer.FormatTime(target)}).", false);
     });
+
+    /// <summary>Clic ou glissement sur la barre de progression : aller à <paramref name="seconds"/>.</summary>
+    public Task SeekToAsync(double seconds) => WithPlayerAsync("Déplacement", async p =>
+    {
+        var target = TimeSpan.FromSeconds(Math.Max(0, seconds));
+        if (DurationSeconds > 1 && target.TotalSeconds > DurationSeconds - 1) target = TimeSpan.FromSeconds(DurationSeconds - 1);
+        await p.SeekAsync(target);
+        ShowSeek(target, DurationSeconds > 0 ? TimeSpan.FromSeconds(DurationSeconds) : null);
+        Report($"Lecture à {DlnaRenderer.FormatTime(target)}.", false);
+    });
+
+    private void ShowSeek(TimeSpan target, TimeSpan? duration)
+    {
+        PositionSeconds = target.TotalSeconds;
+        PositionText = FormatPosition(target, duration);
+        _ignorePositionUntil = _now() + TimeSpan.FromSeconds(2);
+    }
 
     private async Task WithPlayerAsync(string what, Func<IMediaPlayer, Task> action)
     {
@@ -303,7 +342,12 @@ public sealed partial class ShareViewModel(
                 _displayedAt ??= now;
             }
             IsPlaying = info.IsPlaying;
-            if (IsMedia) PositionText = info.Position is { } p ? FormatPosition(p, info.Duration) : "";
+            if (IsMedia && !IsDragging && now >= _ignorePositionUntil)
+            {
+                PositionText = info.Position is { } p ? FormatPosition(p, info.Duration) : "";
+                PositionSeconds = info.Position?.TotalSeconds ?? 0;
+            }
+            if (IsMedia && info.Duration is { } d && d > TimeSpan.Zero) DurationSeconds = d.TotalSeconds;
 
             // Fin d'une vidéo/musique (et pas un Stop demandé) : fichier suivant, s'il y en a un.
             if (IsMedia && _sawPlaying && info.IsStopped && !_userStopped)

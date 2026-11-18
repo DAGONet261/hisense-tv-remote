@@ -6,6 +6,50 @@
         WindowStartupLocation="CenterOwner" Style="{StaticResource DarkWindow}"
         AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop" PreviewKeyDown="OnPreviewKeyDown"
         Loaded="OnLoaded" Closed="OnClosed">
+    <Window.Resources>
+        <!-- Barre de progression sombre : partie lue en bleu, curseur rond. -->
+        <Style x:Key="SeekRepeat" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Background="Transparent">
+                            <Border Height="5" CornerRadius="2.5" Background="{TemplateBinding Background}" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SeekBar" TargetType="Slider">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsMoveToPointEnabled" Value="True"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Track x:Name="PART_Track" Height="22">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource SeekRepeat}" Background="{StaticResource AccentBrush}"/>
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource SeekRepeat}" Background="{StaticResource SurfaceHoverBrush}"/>
+                            </Track.IncreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Ellipse Width="14" Height="14" Fill="{StaticResource TextBrush}"/>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <DockPanel Margin="14">
 
         <!-- ===================== En-tête ===================== -->
@@ -76,6 +120,19 @@
 
         <!-- ===================== Lecteur ===================== -->
         <Border DockPanel.Dock="Bottom" Style="{StaticResource Panel}" Margin="0,12,0,0" Padding="12,10">
+          <StackPanel>
+            <!-- Barre de progression (vidéo, musique) : clic ou glissement pour aller à un moment précis. -->
+            <DockPanel Margin="0,0,0,8" Visibility="{Binding IsMedia, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock DockPanel.Dock="Left" Text="{Binding ElapsedText}" MinWidth="52" FontSize="12"
+                           VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding DurationText}" MinWidth="52" FontSize="12" TextAlignment="Right"
+                           VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
+                <Slider x:Name="SeekBar" Style="{StaticResource SeekBar}" Margin="8,0" Minimum="0"
+                        Maximum="{Binding DurationSeconds}" Value="{Binding PositionSeconds}" IsEnabled="{Binding CanSeekBar}"
+                        AutomationProperties.Name="Position dans la vidéo"
+                        ToolTip="Cliquez ou faites glisser pour aller à un moment précis"
+                        PreviewMouseLeftButtonDown="OnSeekBarDown" PreviewMouseLeftButtonUp="OnSeekBarUp" LostMouseCapture="OnSeekBarLostCapture"/>
+            </DockPanel>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -149,6 +206,7 @@
                     <TextBlock Text="{Binding PositionText}" Foreground="{StaticResource MutedBrush}" FontSize="12" HorizontalAlignment="Right"/>
                 </StackPanel>
             </Grid>
+          </StackPanel>
         </Border>
 
         <!-- ===================== Liste ===================== -->

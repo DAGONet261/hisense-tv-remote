@@ -239,6 +239,43 @@ public class DlnaTests : IDisposable
     }
 
     [Fact]
+    public async Task Barre_de_progression_clic_glissement_et_suivi()
+    {
+        var (vm, player, advance) = NewVm();
+        vm.Add([File("film.mp4")]);
+        await vm.ShowSelectedAsync();
+        var t = new DateTime(2026, 11, 18, 12, 0, 0, DateTimeKind.Utc);
+        Assert.False(vm.CanSeekBar);                                                               // durée encore inconnue
+        Assert.Equal("--:--", vm.DurationText);
+
+        player.Info = new PlaybackInfo("PLAYING", TimeSpan.FromSeconds(12), TimeSpan.FromMinutes(56));
+        advance(t = t.AddSeconds(2)); await vm.TickAsync();
+        Assert.Equal((12d, 3360d, "0:12", "56:00"), (vm.PositionSeconds, vm.DurationSeconds, vm.ElapsedText, vm.DurationText));
+        Assert.True(vm.CanSeekBar);
+
+        // Glissement : la position de la TV n'écrase pas celle visée par l'utilisateur.
+        vm.IsDragging = true;
+        vm.PositionSeconds = 1800;
+        player.Info = new PlaybackInfo("PLAYING", TimeSpan.FromSeconds(14), TimeSpan.FromMinutes(56));
+        advance(t = t.AddSeconds(2)); await vm.TickAsync();
+        Assert.Equal(1800d, vm.PositionSeconds);
+        Assert.Equal("30:00", vm.ElapsedText);
+        vm.IsDragging = false;
+        await vm.SeekToAsync(vm.PositionSeconds);
+        Assert.Equal("seek 00:30:00", player.Calls[^1]);
+
+        // La TV renvoie un instant l'ancienne position : ignorée 2 s, puis suivie de nouveau.
+        advance(t = t.AddSeconds(1)); await vm.TickAsync();
+        Assert.Equal(1800d, vm.PositionSeconds);
+        player.Info = new PlaybackInfo("PLAYING", TimeSpan.FromSeconds(1803), TimeSpan.FromMinutes(56));
+        advance(t = t.AddSeconds(2)); await vm.TickAsync();
+        Assert.Equal(1803d, vm.PositionSeconds);
+
+        await vm.SeekToAsync(99999);                                                               // au-delà de la fin
+        Assert.Equal("seek 00:55:59", player.Calls[^1]);
+    }
+
+    [Fact]
     public async Task Fin_de_video_enchaine_mais_pas_apres_un_stop()
     {
         var (vm, player, advance) = NewVm();

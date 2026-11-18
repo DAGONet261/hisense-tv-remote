@@ -107,6 +107,25 @@ public partial class ShareWindow : Window
         if (e.Data.GetData(DataFormats.FileDrop) is string[] paths) _vm.Add(paths);
     }
 
+    // ---------- Barre de progression : la TV ne saute qu'au relâchement --------------------------
+
+    private void OnSeekBarDown(object sender, MouseButtonEventArgs e) => _vm.IsDragging = true;
+
+    private async void OnSeekBarUp(object sender, MouseButtonEventArgs e) => await EndSeekAsync();
+
+    /// <summary>Relâché hors de la barre pendant un glissement : on saute quand même là où il a été lâché.</summary>
+    private async void OnSeekBarLostCapture(object sender, MouseEventArgs e)
+    {
+        if (Mouse.LeftButton == MouseButtonState.Released) await EndSeekAsync();
+    }
+
+    private async Task EndSeekAsync()
+    {
+        if (!_vm.IsDragging) return;
+        _vm.IsDragging = false;
+        await _vm.SeekToAsync(SeekBar.Value);
+    }
+
     private async void OnListDoubleClick(object sender, MouseButtonEventArgs e) => await _vm.ShowSelectedAsync();
 
     /// <summary>
