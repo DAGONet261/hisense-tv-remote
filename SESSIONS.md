@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| _(aucune session en cours)_ | | | | |
+| Avertissement de marque et licence livrée | `mentions-legales` | `installer/VidaaHisense.iss`, `src/HisenseTvRemote/TvWindow.xaml(.cs)`, `src/Directory.Build.props`, `CHANGELOG.md` | 2026-11-18 | Claude (session principale) |
