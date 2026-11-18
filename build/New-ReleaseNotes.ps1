@@ -3,9 +3,12 @@
     Écrit les notes (en français) d'une Release GitHub : mode d'emploi + commits depuis la Release précédente.
 
 .DESCRIPTION
-    Utilisé par le workflow GitHub (.github/workflows/release.yml). La Release précédente est le
-    dernier tag « v* » avant le commit courant (HEAD) ; sans tag précédent, les 30 derniers commits.
-    Les réservations de zone et les commits « Release x » sont omis. Fichier écrit en UTF-8 sans BOM.
+    Utilisé par le workflow GitHub (.github/workflows/release.yml).
+    - « Nouveautés » : la section « ## <version> » de CHANGELOG.md (écrite pour les utilisateurs), si
+      elle existe.
+    - « Détail des changements » : les commits depuis la Release précédente (dernier tag « v* » avant
+      HEAD ; sans tag précédent, les 30 derniers), sans réservations de zone ni commits « Release x ».
+    Fichier écrit en UTF-8 sans BOM.
 
 .EXAMPLE
     pwsh build/New-ReleaseNotes.ps1 -Version 1.0.0.2 -Out notes.md
@@ -46,12 +49,28 @@ $log = (Invoke-Git (@('log', '--no-merges', '--pretty=format:- %s') + $range)).O
 $changes = if ($log) { $log -join "`n" } else { '- Recompilation, sans changement de code.' }
 $since = if ($hasPrev) { " (depuis $($prev.Out))" } else { '' }
 
+# Section « ## <version> » de CHANGELOG.md, jusqu'à la section suivante de même niveau.
+$news = $null
+$changelog = Join-Path $root 'CHANGELOG.md'
+if (Test-Path $changelog) {
+    $lines = [System.IO.File]::ReadAllLines($changelog, $utf8)
+    $start = [Array]::FindIndex($lines, [Predicate[string]] { param($l) $l.Trim() -eq "## $Version" })
+    if ($start -ge 0) {
+        $section = New-Object System.Collections.Generic.List[string]
+        for ($i = $start + 1; $i -lt $lines.Length -and $lines[$i] -notmatch '^## '; $i++) { $section.Add($lines[$i]) }
+        $text = ($section -join "`n").Trim()
+        if ($text) { $news = $text }
+    }
+}
+$newsBlock = if ($news) { "## Nouveautés`n`n$news`n`n" } else { '' }
+$changesTitle = if ($news) { "## Détail des changements$since" } else { "## Changements$since" }
+
 $notes = @"
 Installeur Windows 64 bits de **VIDAA - Hisense $Version**.
 
 Téléchargez ``VIDAA-Hisense-Setup-$Version.exe`` ci-dessous et lancez-le : une version déjà installée est mise à jour, vos réglages et téléviseurs appairés sont conservés. Le certificat client VIDAA n'est pas inclus : il s'importe au premier lancement (« TV et réglages »).
 
-## Changements$since
+$newsBlock$changesTitle
 
 $changes
 

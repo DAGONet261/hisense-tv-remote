@@ -62,6 +62,16 @@ dit pourquoi. Corriger, puis relancer avec `build\Publish-Release.ps1
 -NoBump` (même version). Si le tag est déjà sur GitHub, rien n'est recompilé :
 relancer le workflow à la main (ci-dessous).
 
+### Notes de version : `CHANGELOG.md` (depuis le 18/11)
+
+**Avant une Release**, écrire dans `CHANGELOG.md` une section dont le titre est
+exactement la version à venir (`## 1.0.0.3`), en français, pour les
+utilisateurs (une ligne par paragraphe ou par puce : GitHub affiche chaque
+retour à la ligne). Le workflow la place en tête de la Release sous
+« Nouveautés », puis ajoute « Détail des changements » (liste des commits).
+Sans section, la Release n'a que la liste des commits. La version à venir est
+celle de `version.txt` + 1 (révision).
+
 ### Côté GitHub : `.github/workflows/release.yml`
 
 Sur une machine Windows neuve (`windows-latest`) :
