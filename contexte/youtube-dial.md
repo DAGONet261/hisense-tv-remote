@@ -36,6 +36,12 @@ Spotify. Port 7000 (AirPlay) ouvert aussi, non exploité.
 - **Tirets bas** : la commande prend deux tirets bas (`req0__sc`), ses
   paramètres **un seul** (`req0_videoId`). Avec deux, le lecteur s'ouvre sur
   un écran noir, sans vidéo.
+- **Une seule session** : une nouvelle session (bind) par envoi, avec le même
+  identifiant d'appareil, n'est acceptée que la première fois (la suite est
+  ignorée). On garde la session et on numérote les demandes : `req0`, `req1`,
+  `req2`… (RID +1 à chaque fois) ; session refusée (fermée par YouTube, TV
+  redémarrée) → nouvelle session et second essai. Vérifié : lecture, ajout à
+  la file, puis nouvelle lecture dans la même session.
 - Nécessite Internet sur le PC (serveurs YouTube) ; le jeton de salon est
   gardé une heure en mémoire.
 

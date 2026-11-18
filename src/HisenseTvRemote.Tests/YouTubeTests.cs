@@ -41,6 +41,17 @@ public class YouTubeTests
     }
 
     [Fact]
+    public void Commandes_numerotees_dans_la_session()
+    {
+        // Commande : deux tirets bas ; paramètres : un seul (sinon écran noir) ; numéro de la demande.
+        var first = YouTubeCaster.FormatCommand(0, "setPlaylist", new Dictionary<string, string> { ["videoId"] = "aqz-KE-bpKQ" });
+        Assert.Equal(new Dictionary<string, string> { ["count"] = "1", ["req0__sc"] = "setPlaylist", ["req0_videoId"] = "aqz-KE-bpKQ" }, first);
+        var third = YouTubeCaster.FormatCommand(2, "addVideo", new Dictionary<string, string> { ["videoId"] = "eRsGyueVLvQ" });
+        Assert.Equal("addVideo", third["req2__sc"]);
+        Assert.Equal("eRsGyueVLvQ", third["req2_videoId"]);
+    }
+
+    [Fact]
     public void Jeton_et_session_YouTube()
     {
         Assert.Equal("AGdO5p8", YouTubeCaster.ParseLoungeToken("""{"screens":[{"screenId":"e574","loungeToken":"AGdO5p8","expiration":1763600000000}]}"""));

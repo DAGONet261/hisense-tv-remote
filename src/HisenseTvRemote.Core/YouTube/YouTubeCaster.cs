@@ -15,8 +15,10 @@ public sealed class YouTubeCastException(string message) : Exception(message);
 /// puis commande <c>setPlaylist</c> (lire) ou <c>addVideo</c> (ajouter à la file).</item>
 /// </list>
 /// Lancer YouTube par DIAL avec « v=… » ne suffit pas (la TV reste sur le choix du profil, sans vidéo).
-/// Piège : dans la session, la commande prend deux tirets bas (<c>req0__sc</c>), ses paramètres un seul
-/// (<c>req0_videoId</c>) — avec deux, le lecteur s'ouvre sur un écran noir.
+/// Pièges : dans la session, la commande prend deux tirets bas (<c>req0__sc</c>), ses paramètres un seul
+/// (<c>req0_videoId</c>) — avec deux, le lecteur s'ouvre sur un écran noir. Et il faut garder UNE session
+/// (numéros de demande req0, req1… à la suite) : une nouvelle session par envoi avec le même appareil
+/// n'est acceptée que la première fois (vérifié le 18/11).
 /// </summary>
 public sealed partial class YouTubeCaster(HttpClient http)
 {
@@ -27,31 +29,75 @@ public sealed partial class YouTubeCaster(HttpClient http)
 
     private readonly Dictionary<string, (string Token, DateTime Until)> _tokens = [];
     private readonly string _deviceId = "htr" + Guid.NewGuid().ToString("N")[..22];
+    /// <summary>Une demande à la fois : la session numérote ses demandes.</summary>
+    private readonly SemaphoreSlim _gate = new(1, 1);
+    private Session? _session;
+
+    /// <summary>Session de télécommande ouverte auprès de YouTube pour une TV (jeton de salon).</summary>
+    private sealed class Session(string token, string sid, string gsession)
+    {
+        public string Token { get; } = token;
+        public string Sid { get; } = sid;
+        public string GSession { get; } = gsession;
+        public int Rid { get; set; } = 1;
+        public int Request { get; set; }
+    }
 
     /// <summary>Nom affiché sur la TV (« … est connecté »).</summary>
     public string DeviceName { get; init; } = "VIDAA - Hisense (PC)";
 
     /// <summary>Lit la vidéo sur la TV (remplace ce qui est en cours).</summary>
     public Task PlayAsync(IPAddress tv, string videoId, CancellationToken ct = default) =>
-        CommandAsync(tv, ct, new Dictionary<string, string>
+        CommandAsync(tv, "setPlaylist", new Dictionary<string, string>
         {
-            ["req0__sc"] = "setPlaylist", ["req0_videoId"] = videoId, ["req0_listId"] = "",
-            ["req0_currentTime"] = "0", ["req0_currentIndex"] = "-1", ["req0_audioOnly"] = "false",
-        });
+            ["videoId"] = videoId, ["listId"] = "", ["currentTime"] = "0", ["currentIndex"] = "-1", ["audioOnly"] = "false",
+        }, ct);
 
     /// <summary>Ajoute la vidéo à la file de lecture de YouTube sur la TV.</summary>
     public Task QueueAsync(IPAddress tv, string videoId, CancellationToken ct = default) =>
-        CommandAsync(tv, ct, new Dictionary<string, string> { ["req0__sc"] = "addVideo", ["req0_videoId"] = videoId });
+        CommandAsync(tv, "addVideo", new Dictionary<string, string> { ["videoId"] = videoId }, ct);
 
-    private async Task CommandAsync(IPAddress tv, CancellationToken ct, Dictionary<string, string> command)
+    /// <summary>
+    /// Envoie une commande dans la session ouverte (ouverte si besoin). Session expirée ou refusée
+    /// (YouTube l'a fermée, TV redémarrée) : nouvelle session et un second essai.
+    /// </summary>
+    private async Task CommandAsync(IPAddress tv, string command, Dictionary<string, string> args, CancellationToken ct)
     {
-        var screen = await ScreenIdAsync(tv, ct).ConfigureAwait(false);
-        var token = await LoungeTokenAsync(screen, ct).ConfigureAwait(false);
-        var (sid, gsession) = await BindAsync(token, ct).ConfigureAwait(false);
-        command["count"] = "1";
-        using var res = await PostFormAsync($"{Lounge}/bc/bind?SID={Uri.EscapeDataString(sid)}&gsessionid={Uri.EscapeDataString(gsession)}&RID=2&VER=8&CVER=1",
-            command, token, ct).ConfigureAwait(false);
-        if (!res.IsSuccessStatusCode) throw new YouTubeCastException($"YouTube a refusé la demande (HTTP {(int)res.StatusCode}).");
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            for (var attempt = 0; ; attempt++)
+            {
+                var screen = await ScreenIdAsync(tv, ct).ConfigureAwait(false);
+                var token = await LoungeTokenAsync(screen, ct).ConfigureAwait(false);
+                if (_session is null || _session.Token != token) _session = await BindAsync(token, ct).ConfigureAwait(false);
+                var session = _session;
+                session.Rid++;
+                using var res = await PostFormAsync(
+                    $"{Lounge}/bc/bind?SID={Uri.EscapeDataString(session.Sid)}&gsessionid={Uri.EscapeDataString(session.GSession)}&RID={session.Rid}&VER=8&CVER=1",
+                    FormatCommand(session.Request, command, args), token, ct).ConfigureAwait(false);
+                if (res.IsSuccessStatusCode)
+                {
+                    session.Request++;
+                    return;
+                }
+                _session = null;                                          // session fermée : on en rouvre une
+                if (res.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden) _tokens.Remove(screen);
+                if (attempt >= 1) throw new YouTubeCastException($"YouTube a refusé la demande (HTTP {(int)res.StatusCode}).");
+            }
+        }
+        finally { _gate.Release(); }
+    }
+
+    /// <summary>
+    /// Corps d'une commande : <c>count=1</c>, <c>req{n}__sc=commande</c> (deux tirets bas) et
+    /// <c>req{n}_paramètre=valeur</c> (un seul), n = numéro de la demande dans la session.
+    /// </summary>
+    public static Dictionary<string, string> FormatCommand(int request, string command, IReadOnlyDictionary<string, string> args)
+    {
+        var form = new Dictionary<string, string> { ["count"] = "1", [$"req{request}__sc"] = command };
+        foreach (var (key, value) in args) form[$"req{request}_{key}"] = value;
+        return form;
     }
 
     // ---------- 1. DIAL : YouTube sur la TV et son screenId -------------------------------------
@@ -129,7 +175,7 @@ public sealed partial class YouTubeCaster(HttpClient http)
         }
     }
 
-    private async Task<(string Sid, string GSession)> BindAsync(string token, CancellationToken ct)
+    private async Task<Session> BindAsync(string token, CancellationToken ct)
     {
         using var res = await PostFormAsync($"{Lounge}/bc/bind?RID=1&VER=8&CVER=1", new Dictionary<string, string>
         {
@@ -137,7 +183,8 @@ public sealed partial class YouTubeCaster(HttpClient http)
             ["mdx-version"] = "3", ["pairing_type"] = "cast", ["app"] = "android-phone-13.14.55",
         }, token, ct).ConfigureAwait(false);
         var body = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-        return ParseBind(body) ?? throw new YouTubeCastException("YouTube n'a pas ouvert de session avec la TV.");
+        var (sid, gsession) = ParseBind(body) ?? throw new YouTubeCastException("YouTube n'a pas ouvert de session avec la TV.");
+        return new Session(token, sid, gsession);
     }
 
     /// <summary>Identifiants de session dans la réponse de « bind » (<c>["c","SID",…]</c>, <c>["S","gsessionid"]</c>).</summary>
@@ -187,7 +234,7 @@ public sealed partial class YouTubeCaster(HttpClient http)
     private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage req, CancellationToken ct)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(TimeSpan.FromSeconds(10));
+        cts.CancelAfter(TimeSpan.FromSeconds(req.RequestUri?.Host == "www.youtube.com" ? 25 : 10));
         try { return await http.SendAsync(req, cts.Token).ConfigureAwait(false); }
         catch (HttpRequestException ex)
         {
