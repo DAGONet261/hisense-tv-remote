@@ -131,6 +131,17 @@ sans elles, message explicite.
   les réseaux privés).
 - Sur un réseau classé « Public », la règle ne s'applique pas : passer le
   réseau en « Privé » (Paramètres Windows → Réseau).
+- **Installeur** (depuis 1.0.0.3) : case « Autoriser le partage vers la TV
+  dans le pare-feu » (cochée par défaut). Installation pour tous : règle
+  créée directement ; « pour moi seul » : confirmation administrateur (UAC)
+  juste pour la règle, refus non bloquant. Vérification à la fin (règle
+  présente et active pour l'exe installé, via HNetCfg.FwPolicy2) ; sinon
+  message « l'application proposera de l'autoriser ». Réseau classé
+  « Public » détecté (CurrentProfileTypes) : message pour passer en « Privé ».
+  Désinstallation « pour moi seul » : la règle est retirée (UAC).
+- **Application** : même contrôle à l'ouverture du partage ; bandeau adapté
+  (réseau Public → bouton « Paramètres réseau », ms-settings:network-status ;
+  règle absente → « Autoriser dans le pare-feu »).
 
 ## Points d'attention
 

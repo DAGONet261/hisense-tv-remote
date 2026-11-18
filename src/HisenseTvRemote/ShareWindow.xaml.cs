@@ -54,14 +54,48 @@ public partial class ShareWindow : Window
     private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         CleanupLeftovers();
-        // Pare-feu vérifié d'emblée : sur certains postes, Windows bloque sans rien demander.
-        var exe = Environment.ProcessPath;
-        if (exe is not null && await Task.Run(() => FirewallHelper.HasAllowRule(exe)) == false)
+        // Pare-feu et type de réseau vérifiés d'emblée : sur certains postes, Windows bloque sans rien demander.
+        _vm.PropertyChanged += async (_, args) =>
         {
-            _vm.FirewallSuspected = true;
-            _vm.Report("Avant de partager : autorisez l'app dans le pare-feu Windows (bandeau ci-dessus).", false);
-        }
+            if (args.PropertyName == nameof(ShareViewModel.FirewallSuspected) && _vm.FirewallSuspected) await UpdateFirewallBannerAsync();
+        };
+        if (await UpdateFirewallBannerAsync())
+            _vm.Report("Avant de partager : voir le bandeau ci-dessus (pare-feu Windows).", false);
         await _vm.MonitorAsync(_monitor.Token);
+    }
+
+    /// <summary>
+    /// Adapte le bandeau : réseau « Public » (Windows bloque le partage quelle que soit la règle) et/ou
+    /// règle absente. Renvoie vrai si un problème est trouvé (bandeau affiché).
+    /// </summary>
+    private async Task<bool> UpdateFirewallBannerAsync()
+    {
+        var exe = Environment.ProcessPath;
+        var (missing, isPublic) = await Task.Run(() =>
+            (exe is not null && FirewallHelper.HasAllowRule(exe) == false, FirewallHelper.IsPublicNetworkOnly() == true));
+        FirewallButton.Visibility = missing || !isPublic ? Visibility.Visible : Visibility.Collapsed;
+        NetworkButton.Visibility = isPublic ? Visibility.Visible : Visibility.Collapsed;
+        if (isPublic)
+        {
+            FirewallTitle.Text = "Votre réseau est classé « Public » dans Windows.";
+            FirewallDetail.Text = "Par sécurité, Windows y bloque le partage vers la TV. Si vous êtes chez vous, classez-le en « Privé » " +
+                                  "(bouton « Paramètres réseau » → Type de profil réseau → Privé)" +
+                                  (missing ? ", puis autorisez l'app dans le pare-feu." : ", puis renvoyez le fichier.");
+        }
+        else
+        {
+            FirewallTitle.Text = "Le pare-feu Windows bloque le partage.";
+            FirewallDetail.Text = "La TV doit pouvoir télécharger les fichiers sur ce PC. Autorisez l'app (réseau privé, appareils " +
+                                  "du réseau local seulement), puis renvoyez le fichier.";
+        }
+        if (missing || isPublic) _vm.FirewallSuspected = true;
+        return missing || isPublic;
+    }
+
+    private void OnOpenNetworkSettings(object sender, RoutedEventArgs e)
+    {
+        try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:network-status") { UseShellExecute = true }); }
+        catch (System.ComponentModel.Win32Exception ex) { _vm.Report("Impossible d'ouvrir les paramètres réseau : " + ex.Message, true); }
     }
 
     /// <summary>
@@ -94,7 +128,7 @@ public partial class ShareWindow : Window
             var error = await Task.Run(() => FirewallHelper.AddRule(exe));
             if (error is null)
             {
-                _vm.FirewallSuspected = false;
+                _vm.FirewallSuspected = FirewallHelper.IsPublicNetworkOnly() == true;     // réseau Public : bandeau gardé
                 _vm.Report("Partage autorisé dans le pare-feu. Envoyez (ou renvoyez) un fichier à la TV.", false);
             }
             else _vm.Report("Pare-feu non modifié : " + error, true);

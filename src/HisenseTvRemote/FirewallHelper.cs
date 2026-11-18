@@ -14,7 +14,7 @@ namespace HisenseTvRemote;
 public static class FirewallHelper
 {
     public const string RuleName = "VIDAA - Hisense (partage vers la TV)";
-    private const int Inbound = 1, Allow = 1, PrivateProfile = 2;
+    private const int Inbound = 1, Allow = 1, PrivateProfile = 2, PublicProfile = 4;
 
     /// <summary>
     /// Une règle entrante active autorise-t-elle <paramref name="exe"/> sur le réseau privé ?
@@ -41,6 +41,27 @@ public static class FirewallHelper
         }
         catch (Exception ex) when (ex is COMException or InvalidCastException or ArgumentException or NotSupportedException
                                        or Microsoft.CSharp.RuntimeBinder.RuntimeBinderException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Réseau actuel classé « Public » (et pas « Privé ») : Windows y bloque le partage, quelle que soit la
+    /// règle (prévue pour le réseau privé). Null si on ne peut pas le savoir.
+    /// </summary>
+    public static bool? IsPublicNetworkOnly()
+    {
+        try
+        {
+            var type = Type.GetTypeFromProgID("HNetCfg.FwPolicy2");
+            if (type is null) return null;
+            dynamic policy = Activator.CreateInstance(type)!;
+            var types = (int)policy.CurrentProfileTypes;
+            return (types & PublicProfile) != 0 && (types & PrivateProfile) == 0;
+        }
+        catch (Exception ex) when (ex is COMException or InvalidCastException or Microsoft.CSharp.RuntimeBinder.RuntimeBinderException
+                                       or UnauthorizedAccessException)
         {
             return null;
         }

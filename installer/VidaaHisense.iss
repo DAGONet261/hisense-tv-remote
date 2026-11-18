@@ -81,10 +81,15 @@ french.WelcomeLabel2=Cet assistant va installer [name/ver] sur votre ordinateur.
 [CustomMessages]
 french.LaunchApp=Lancer {#AppName}
 french.FirewallStatus=Autorisation du partage vers la TV dans le pare-feu Windows…
+french.FirewallGroup=Partage vers la TV :
+french.FirewallTask=Autoriser le partage vers la TV dans le pare-feu Windows (réseau privé, appareils du réseau local seulement)
+french.FirewallFailed=Le partage vers la TV n'a pas pu être autorisé dans le pare-feu Windows (autorisation refusée ou impossible).%n%nCe n'est pas bloquant : à la première utilisation de « Partager », l'application proposera de l'autoriser en un clic.
+french.PublicNetwork=Votre réseau est classé « Public » dans Windows : par sécurité, le partage vers la TV n'y est pas autorisé.%n%nSi vous êtes chez vous, classez-le en « Privé » : Paramètres Windows → Réseau et Internet → Ethernet (ou Wi-Fi) → Type de profil réseau → Privé.
 french.RemoveDataQuestion=Supprimer aussi vos données personnelles ?%n%nTéléviseurs appairés, jetons d'accès chiffrés, certificat client VIDAA importé et journal des commandes.%n%nChoisissez « Non » pour les conserver (utile en cas de réinstallation).
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "firewall"; Description: "{cm:FirewallTask}"; GroupDescription: "{cm:FirewallGroup}"
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -94,23 +99,112 @@ Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Comment: "T�
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Comment: "Télécommande pour téléviseurs Hisense VIDAA"; Tasks: desktopicon
 
 [Run]
-; Pare-feu : la TV vient chercher les photos/vidéos partagées sur ce PC (DLNA). Règle limitée à l'exe, au
-; réseau privé et au sous-réseau local ; recréée à chaque mise à jour. Installation « pour moi seul » (sans
-; droits administrateur) : pas de règle, Windows demandera l'autorisation au premier partage.
-Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#FirewallRule}"""; Flags: runhidden; Check: IsAdminInstallMode
-Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall add rule name=""{#FirewallRule}"" dir=in action=allow program=""{app}\{#AppExeName}"" enable=yes profile=private remoteip=localsubnet protocol=TCP"; StatusMsg: "{cm:FirewallStatus}"; Flags: runhidden; Check: IsAdminInstallMode
+; Le pare-feu (partage vers la TV) est traité dans [Code] : CurStepChanged.
 Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchApp}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
 Filename: "{sys}\netsh.exe"; Parameters: "advfirewall firewall delete rule name=""{#FirewallRule}"""; Flags: runhidden; RunOnceId: "SupprimerRegleParefeu"; Check: IsAdminInstallMode
 
 [Code]
+// ---------- Pare-feu : partage vers la TV ----------------------------------------------------
+// La TV vient chercher les photos/vidéos sur ce PC (DLNA) : règle entrante pour l'exe, TCP, réseau
+// privé, sous-réseau local. Installation pour tous : créée directement (Setup est administrateur).
+// Installation « pour moi seul » : confirmation administrateur (UAC) juste pour la règle ; si elle est
+// refusée, l'installation continue et l'application proposera de l'autoriser.
+
+const
+  FW_PROFILE_PRIVATE = 2;
+  FW_PROFILE_PUBLIC = 4;
+
+function FirewallPolicy(var Policy: Variant): Boolean;
+begin
+  try
+    Policy := CreateOleObject('HNetCfg.FwPolicy2');
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+
+{ La règle de l'application existe-t-elle, active, pour l'exe installé ? }
+function FirewallRuleOk(): Boolean;
+var
+  Policy, Rule: Variant;
+  Enabled: Boolean;
+  RuleApp: String;
+begin
+  Result := False;
+  if not FirewallPolicy(Policy) then Exit;
+  try
+    Rule := Policy.Rules.Item('{#FirewallRule}');
+    Enabled := Rule.Enabled;
+    RuleApp := Rule.ApplicationName;
+    Result := Enabled and (CompareText(RuleApp, ExpandConstant('{app}\{#AppExeName}')) = 0);
+  except
+    Result := False;
+  end;
+end;
+
+{ Réseau actuel classé « Public » (et pas « Privé ») : la règle « réseau privé » ne s'y applique pas. }
+function OnPublicNetworkOnly(): Boolean;
+var
+  Policy: Variant;
+  Types: Integer;
+begin
+  Result := False;
+  if not FirewallPolicy(Policy) then Exit;
+  try
+    Types := Policy.CurrentProfileTypes;
+    Result := ((Types and FW_PROFILE_PUBLIC) <> 0) and ((Types and FW_PROFILE_PRIVATE) = 0);
+  except
+    Result := False;
+  end;
+end;
+
+{ Lance une commande netsh, élevée si l'installation ne l'est pas (UAC). }
+procedure RunFirewallCommand(const Params: String);
+var
+  ResultCode: Integer;
+begin
+  if IsAdminInstallMode then
+    Exec(ExpandConstant('{cmd}'), Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
+  else
+    ShellExec('runas', ExpandConstant('{cmd}'), Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+procedure AllowSharing();
+begin
+  RunFirewallCommand('/c netsh advfirewall firewall delete rule name="{#FirewallRule}" >nul 2>&1 & ' +
+    'netsh advfirewall firewall add rule name="{#FirewallRule}" dir=in action=allow program="' +
+    ExpandConstant('{app}\{#AppExeName}') + '" enable=yes profile=private remoteip=localsubnet protocol=TCP');
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep <> ssPostInstall then
+    Exit;
+  if WizardIsTaskSelected('firewall') then
+  begin
+    WizardForm.StatusLabel.Caption := CustomMessage('FirewallStatus');
+    if not FirewallRuleOk() then
+      AllowSharing();
+    if (not FirewallRuleOk()) and (not WizardSilent) then
+      SuppressibleMsgBox(CustomMessage('FirewallFailed'), mbInformation, MB_OK, IDOK);
+  end;
+  if OnPublicNetworkOnly() and (not WizardSilent) then
+    SuppressibleMsgBox(CustomMessage('PublicNetwork'), mbInformation, MB_OK, IDOK);
+end;
+
 // À la désinstallation : proposer (sans l'imposer) d'effacer les données de l'utilisateur,
 // rangées dans %APPDATA%\HisenseTvRemote (base SQLite, certificat, journal des erreurs).
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   DataDir: String;
 begin
+  // Installation « pour moi seul » : la règle (créée via UAC) est retirée de la même façon.
+  if (CurUninstallStep = usUninstall) and (not IsAdminInstallMode) and FirewallRuleOk() then
+    RunFirewallCommand('/c netsh advfirewall firewall delete rule name="{#FirewallRule}" program="' +
+      ExpandConstant('{app}\{#AppExeName}') + '"');
   if CurUninstallStep <> usPostUninstall then
     Exit;
   DataDir := ExpandConstant('{userappdata}\{#AppDataDir}');

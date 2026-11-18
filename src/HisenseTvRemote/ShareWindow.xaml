@@ -109,9 +109,17 @@
                         <TextBlock Text="Autoriser dans le pare-feu"/>
                     </StackPanel>
                 </Button>
+                <Button x:Name="NetworkButton" DockPanel.Dock="Right" Style="{StaticResource SmallButton}" Click="OnOpenNetworkSettings"
+                        AutomationProperties.Name="Paramètres réseau" Margin="12,0,0,0" Height="36" Visibility="Collapsed"
+                        ToolTip="Ouvre les paramètres réseau de Windows pour classer le réseau en « Privé »">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE968;" Margin="0,0,6,0"/>
+                        <TextBlock Text="Paramètres réseau"/>
+                    </StackPanel>
+                </Button>
                 <TextBlock TextWrapping="Wrap" VerticalAlignment="Center">
-                    <Run FontWeight="SemiBold" Text="Le pare-feu Windows bloque le partage."/>
-                    <Run Foreground="{StaticResource MutedBrush}" Text="La TV doit pouvoir télécharger les fichiers sur ce PC. Autorisez l'app (réseau privé, appareils du réseau local seulement), puis renvoyez le fichier."/>
+                    <Run x:Name="FirewallTitle" FontWeight="SemiBold" Text="Le pare-feu Windows bloque le partage."/>
+                    <Run x:Name="FirewallDetail" Foreground="{StaticResource MutedBrush}" Text="La TV doit pouvoir télécharger les fichiers sur ce PC. Autorisez l'app (réseau privé, appareils du réseau local seulement), puis renvoyez le fichier."/>
                 </TextBlock>
             </DockPanel>
         </Border>
