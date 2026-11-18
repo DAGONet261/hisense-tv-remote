@@ -71,6 +71,11 @@ l'avancement (par toi, ou par Claude Code dans Visual Studio).
       fluide) ; TS/AVI convertis en MP4 par FFmpeg (préparés dès l'ajout) ;
       MKV refusés (choix de l'utilisateur) ; pare-feu détecté et autorisé en un
       clic. Voir `contexte/partage-dlna.md`
+- [x] **Envoyer un lien YouTube** (18/11) : DIAL + API Lounge (comme « caster ») ;
+      protocole vérifié devant la TV (lecture, file, nouvelle lecture dans une
+      même session). Voir `contexte/youtube-dial.md`
+- [ ] YouTube : tester l'app elle-même devant la TV (plusieurs envois d'affilée,
+      session rouverte après inactivité)
 - [ ] Partage : vérifier AVI/WMV/FLV sur la TV (pas encore de fichier d'essai)
 - [ ] Partage : réencodage en direct pour les codecs d'image non lus par la TV
       (encodeurs H.264 matériels déjà présents dans FFmpeg)

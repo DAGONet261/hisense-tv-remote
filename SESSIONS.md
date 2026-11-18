@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| Envoyer un lien YouTube (DIAL + Lounge) | `youtube-cast` | `src/HisenseTvRemote.Core/YouTube/` (nouveau), `src/HisenseTvRemote/YouTubeWindow.xaml(.cs)` (nouveau), `src/HisenseTvRemote/MainWindow.xaml(.cs)`, `src/HisenseTvRemote.Core/KeyboardShortcuts.cs`, `src/HisenseTvRemote.Tests/YouTubeTests.cs` (nouveau), `contexte/youtube-dial.md` (nouveau), `contexte/capacites-tv.md`, `CHANGELOG.md` | 2026-11-18 | Claude (session principale) |
+| _(aucune session en cours)_ | | | | |
