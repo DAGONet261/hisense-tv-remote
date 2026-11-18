@@ -36,6 +36,26 @@
             </StackPanel>
         </DockPanel>
 
+        <!-- ===================== Pare-feu (la TV ne peut pas télécharger) ===================== -->
+        <Border DockPanel.Dock="Top" Margin="0,0,0,12" Padding="12,10" CornerRadius="10"
+                Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource DangerBrush}" BorderThickness="1"
+                Visibility="{Binding FirewallSuspected, Converter={StaticResource BoolToVisibility}}">
+            <DockPanel>
+                <Button x:Name="FirewallButton" DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Click="OnAllowFirewall"
+                        AutomationProperties.Name="Autoriser dans le pare-feu" Margin="12,0,0,0" Padding="14,0" Height="36"
+                        ToolTip="Ajoute la règle « VIDAA - Hisense (partage vers la TV) » : réseau privé, sous-réseau local (confirmation administrateur)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE83D;" Margin="0,0,6,0"/>
+                        <TextBlock Text="Autoriser dans le pare-feu"/>
+                    </StackPanel>
+                </Button>
+                <TextBlock TextWrapping="Wrap" VerticalAlignment="Center">
+                    <Run FontWeight="SemiBold" Text="Le pare-feu Windows bloque le partage."/>
+                    <Run Foreground="{StaticResource MutedBrush}" Text="La TV doit pouvoir télécharger les fichiers sur ce PC. Autorisez l'app (réseau privé, appareils du réseau local seulement), puis renvoyez le fichier."/>
+                </TextBlock>
+            </DockPanel>
+        </Border>
+
         <!-- ===================== Barre d'état ===================== -->
         <DockPanel DockPanel.Dock="Bottom" Margin="2,10,2,0">
             <ProgressBar DockPanel.Dock="Right" Width="90" Height="4" IsIndeterminate="True"

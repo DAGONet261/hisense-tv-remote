@@ -37,8 +37,11 @@ public sealed class MediaHttpServer : IAsyncDisposable
     public int Port { get; }
     public string BaseUrl { get; }
 
-    /// <summary>Requêtes reçues (méthode, chemin, statut) : pour le journal et le diagnostic.</summary>
+    /// <summary>Fichier servi à un appareil autorisé (méthode, fichier, statut 200/206).</summary>
     public event Action<string>? RequestServed;
+
+    /// <summary>Demande refusée (appareil non autorisé, fichier inconnu) : diagnostic.</summary>
+    public event Action<string>? RequestRejected;
 
     /// <summary>Publie un fichier et renvoie son adresse. Le nom du fichier n'apparaît pas dans l'adresse.</summary>
     public string Publish(string path, MediaType type)
@@ -102,7 +105,7 @@ public sealed class MediaHttpServer : IAsyncDisposable
             if (!_allowed.Contains(remote))
             {
                 await SendStatusAsync(stream, 403, "Forbidden", ct).ConfigureAwait(false);
-                RequestServed?.Invoke($"{method} refusé à {remote} (403)");
+                RequestRejected?.Invoke($"{method} refusé à {remote} (403)");
                 return;
             }
             if (method is not ("GET" or "HEAD"))
@@ -116,7 +119,7 @@ public sealed class MediaHttpServer : IAsyncDisposable
             if (!_files.TryGetValue(token, out var file) || !File.Exists(file.Path))
             {
                 await SendStatusAsync(stream, 404, "Not Found", ct).ConfigureAwait(false);
-                RequestServed?.Invoke($"{method} {pathPart} (404)");
+                RequestRejected?.Invoke($"{method} {pathPart} (404)");
                 return;
             }
 

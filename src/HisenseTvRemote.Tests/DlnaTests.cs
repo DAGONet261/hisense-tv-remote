@@ -171,10 +171,15 @@ public class DlnaTests : IDisposable
         public List<string> Calls { get; } = [];
         public PlaybackInfo Info { get; set; } = new("STOPPED", null, null);
 
+        /// <summary>Faux : la TV télécharge le fichier dès l'envoi (sauf si <see cref="Blocked"/>).</summary>
+        public bool Blocked { get; set; }
+        public event Action<string>? RequestServed;
+
         public Task ShowAsync(string path, MediaType type, string title, CancellationToken ct = default)
         {
             Calls.Add($"show {Path.GetFileName(path)} {type.Kind}");
             Info = new PlaybackInfo("TRANSITIONING", null, null);
+            if (!Blocked) RequestServed?.Invoke("GET");
             return Task.CompletedTask;
         }
         public Task PlayAsync(CancellationToken ct = default) { Calls.Add("play"); return Task.CompletedTask; }
@@ -256,6 +261,28 @@ public class DlnaTests : IDisposable
         advance(t = t.AddSeconds(2)); await vm.TickAsync();
         Assert.Equal("stop", player.Calls[^1]);                                                    // pas d'enchaînement
         Assert.Equal("2.mp4", vm.Current!.Name);
+    }
+
+    [Fact]
+    public async Task TV_qui_ne_telecharge_pas_pare_feu_signale()
+    {
+        var (vm, player, advance) = NewVm();
+        player.Blocked = true;
+        vm.Add([File("1.jpg")]);
+        await vm.ShowSelectedAsync();
+        var t = new DateTime(2026, 11, 18, 12, 0, 0, DateTimeKind.Utc);
+        advance(t = t.AddSeconds(10)); await vm.TickAsync();
+        Assert.False(vm.FirewallSuspected);
+        advance(t = t.AddSeconds(11)); await vm.TickAsync();
+        Assert.True(vm.FirewallSuspected);
+        Assert.True(vm.LastFailed);
+        Assert.Contains("pare-feu", vm.Status);
+
+        var (ok, okPlayer, okAdvance) = NewVm();                                                   // TV qui télécharge : rien
+        ok.Add([File("2.jpg")]);
+        await ok.ShowSelectedAsync();
+        okAdvance(t.AddSeconds(30)); await ok.TickAsync();
+        Assert.False(ok.FirewallSuspected);
     }
 
     [Fact]

@@ -53,6 +53,8 @@ public sealed partial class ShareViewModel(
     /// <summary>Sans signe de lecture de la TV au bout de ce délai, le diaporama démarre quand même.</summary>
     private static readonly TimeSpan DisplayFallback = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan PollEvery = TimeSpan.FromSeconds(1);
+    /// <summary>Sans téléchargement par la TV au bout de ce délai : pare-feu probable.</summary>
+    private static readonly TimeSpan FetchTimeout = TimeSpan.FromSeconds(20);
 
     private readonly Func<DateTime> _now = clock ?? (() => DateTime.UtcNow);
     private IMediaPlayer? _player;
@@ -62,6 +64,8 @@ public sealed partial class ShareViewModel(
     private DateTime _lastPoll = DateTime.MinValue;
     private bool _sawPlaying;
     private bool _userStopped;
+    private volatile bool _fetched;
+    private bool _fetchChecked;
 
     public ObservableCollection<ShareItem> Items { get; } = [];
 
@@ -89,6 +93,13 @@ public sealed partial class ShareViewModel(
 
     [ObservableProperty]
     private string _positionText = "";
+
+    /// <summary>
+    /// Le pare-feu Windows empêche sans doute la TV de télécharger les fichiers : la vue propose de
+    /// l'autoriser (règle « réseau privé, sous-réseau local »).
+    /// </summary>
+    [ObservableProperty]
+    private bool _firewallSuspected;
 
     [ObservableProperty]
     private bool _slideshow;
@@ -172,12 +183,18 @@ public sealed partial class ShareViewModel(
             _sawPlaying = false;
             _userStopped = false;
             _displayedAt = null;
+            _fetched = false;
+            _fetchChecked = false;
             Report($"Envoi de « {item.Name} » à la TV…", false);
 
             var path = item.Path;
             if (item.Kind == MediaKind.Photo && preparePhoto is not null)
                 path = await preparePhoto(item.Path, CancellationToken.None);
-            _player ??= playerFactory();
+            if (_player is null)
+            {
+                _player = playerFactory();
+                _player.RequestServed += _ => _fetched = true;
+            }
             await _player.ShowAsync(path, item.Type, Path.GetFileNameWithoutExtension(item.Name));
             _sentAt = _now();
             Report(item.Kind == MediaKind.Photo
@@ -260,6 +277,18 @@ public sealed partial class ShareViewModel(
     {
         if (_player is null || Current is null || Volatile.Read(ref _busy) == 1) return;
         var now = _now();
+
+        // La TV n'est pas venue chercher le fichier : le pare-feu bloque presque toujours.
+        if (!_fetchChecked && !_fetched && now - _sentAt >= FetchTimeout)
+        {
+            _fetchChecked = true;
+            FirewallSuspected = true;
+            Slideshow = false;
+            Report("La TV n'est pas venue chercher le fichier : le pare-feu Windows bloque sans doute le partage. " +
+                   "Cliquez sur « Autoriser dans le pare-feu », puis renvoyez le fichier.", true);
+            return;
+        }
+        if (_fetched) _fetchChecked = true;
 
         if (now - _lastPoll >= PollEvery)
         {

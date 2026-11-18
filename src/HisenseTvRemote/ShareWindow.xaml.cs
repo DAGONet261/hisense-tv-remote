@@ -46,7 +46,35 @@ public partial class ShareWindow : Window
         return new DlnaPlayer(ip, Http);
     }
 
-    private async void OnLoaded(object sender, RoutedEventArgs e) => await _vm.MonitorAsync(_monitor.Token);
+    private async void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        // Pare-feu vérifié d'emblée : sur certains postes, Windows bloque sans rien demander.
+        var exe = Environment.ProcessPath;
+        if (exe is not null && await Task.Run(() => FirewallHelper.HasAllowRule(exe)) == false)
+        {
+            _vm.FirewallSuspected = true;
+            _vm.Report("Avant de partager : autorisez l'app dans le pare-feu Windows (bandeau ci-dessus).", false);
+        }
+        await _vm.MonitorAsync(_monitor.Token);
+    }
+
+    private async void OnAllowFirewall(object sender, RoutedEventArgs e)
+    {
+        var exe = Environment.ProcessPath;
+        if (exe is null) return;
+        FirewallButton.IsEnabled = false;
+        try
+        {
+            var error = await Task.Run(() => FirewallHelper.AddRule(exe));
+            if (error is null)
+            {
+                _vm.FirewallSuspected = false;
+                _vm.Report("Partage autorisé dans le pare-feu. Envoyez (ou renvoyez) un fichier à la TV.", false);
+            }
+            else _vm.Report("Pare-feu non modifié : " + error, true);
+        }
+        finally { FirewallButton.IsEnabled = true; }
+    }
 
     private async void OnClosed(object? sender, EventArgs e)
     {

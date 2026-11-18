@@ -12,6 +12,9 @@ public interface IMediaPlayer : IAsyncDisposable
     Task StopAsync(CancellationToken ct = default);
     Task SeekAsync(TimeSpan position, CancellationToken ct = default);
     Task<PlaybackInfo> GetInfoAsync(CancellationToken ct = default);
+
+    /// <summary>La TV a téléchargé (une partie d') un fichier servi. Peut venir d'un autre thread.</summary>
+    event Action<string>? RequestServed;
 }
 
 /// <summary>
@@ -27,7 +30,6 @@ public sealed class DlnaPlayer(IPAddress tv, HttpClient http) : IMediaPlayer
     private DlnaRenderer? _renderer;
     private MediaHttpServer? _server;
 
-    /// <summary>Requêtes servies à la TV (diagnostic).</summary>
     public event Action<string>? RequestServed;
 
     public string? TvName => _renderer?.Name;
