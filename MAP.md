@@ -18,8 +18,9 @@ chercher ailleurs.
 | `THIRD-PARTY-NOTICES.md` | Licences tierces (pyvidaa porté en C#, MQTTnet) ; certificat VIDAA non distribué. Copié à côté de l'exe. | Toute nouvelle dépendance ou code repris |
 | `.gitignore` | Exclusions Git : secrets (`.env`), certificats et clés, APK VIDAA (`sources/`), base, journaux, notes locales. | Nouvelle exclusion si un outil ajoute des fichiers à ignorer |
 | `version.txt` | Version de la dernière Release (une compilation Release l'incrémente). Voir `contexte/publication.md`. | — |
-| `build/` | Scripts : `Publish-Release.ps1` (Release + installeur en ligne de commande), `Publish-GitHubRelease.ps1` (tag + Release GitHub avec l'installeur, appelé automatiquement), `New-AppIcon.ps1` (icône et images de l'installeur). | Nouveau script de construction/publication |
+| `build/` | Scripts : `Publish-Release.ps1` (Release + installeur en ligne de commande), `Push-ReleaseTag.ps1` (commit de `version.txt`, tag `v<version>` et push : déclenche le workflow, appelé automatiquement), `New-ReleaseNotes.ps1` (notes en français d'une Release), `New-AppIcon.ps1` (icône et images de l'installeur). | Nouveau script de construction/publication |
 | `installer/` | Installeur Inno Setup 7 : `VidaaHisense.iss` (**UTF-8 avec BOM**), `images/` de l'assistant. | Tout ce qui concerne l'installeur |
+| `.github/workflows/release.yml` | Workflow GitHub Actions : sur un tag `v*`, compile, teste, crée l'installeur et publie la Release (essai manuel possible). Voir `contexte/publication.md`. | Toute automatisation GitHub |
 | `dist/` | *Généré, non versionné* : `publish/` (app autonome) et `VIDAA-Hisense-Setup-<version>.exe`. | — |
 | `.gitattributes` | Normalisation des fins de ligne entre appareils. | — |
 | `.env` | Secrets réels (mot de passe PKCS12 du certificat VIDAA, `VIDAA_P12_PASSWORD`). **Jamais committé.** | Tout secret/clé réelle |

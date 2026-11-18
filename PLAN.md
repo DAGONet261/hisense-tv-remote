@@ -60,8 +60,9 @@ l'avancement (par toi, ou par Claude Code dans Visual Studio).
       version ; icône VIDAA ; nom « VIDAA - Hisense ». Certificat jamais
       embarqué. Voir `contexte/publication.md`
 - [x] **Release GitHub automatique** (18/11) : chaque compilation Release
-      commite `version.txt`, pousse `main` et publie la Release `v<version>`
-      avec l'installeur. Voir `contexte/publication.md`
+      commite `version.txt`, crée le tag `v<version>` et le pousse ; le
+      workflow GitHub Actions compile, teste et publie la Release avec
+      l'installeur. Voir `contexte/publication.md`
 - [x] **Rembobiner** (17/11) : `KEY_BACKS` (vérifié devant la TV, lecteur USB et
       YouTube) ; `KEY_BACK` de pyvidaa ne fait rien
 - [ ] **Partager vers la TV (DLNA)** : photos, vidéos, musique du PC vers la
