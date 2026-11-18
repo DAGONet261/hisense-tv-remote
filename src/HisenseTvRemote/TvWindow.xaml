@@ -123,6 +123,8 @@
                             <Button Style="{StaticResource SmallButton}" Content="Ouvrir le dossier" Click="OnOpenCertDir"/>
                         </WrapPanel>
                         <TextBlock x:Name="DbPathText" Style="{StaticResource Hint}" Margin="3,10,3,0"/>
+                        <!-- Version, avertissement de marque et licence (dépôt et installeur publics). -->
+                        <TextBlock x:Name="AboutText" Style="{StaticResource Hint}" Margin="3,6,3,0" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Border>
             </StackPanel>

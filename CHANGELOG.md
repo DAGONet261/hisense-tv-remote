@@ -2,6 +2,11 @@
 
 Une section par version, la plus récente en haut. Le titre de section doit être exactement le numéro de version (`## 1.0.0.2`) : son contenu est repris tel quel en tête de la Release GitHub (« Nouveautés »), avant le détail des changements techniques.
 
+## 1.0.0.3
+
+- Le projet est désormais **public et libre** (licence MIT) : le fichier de licence est installé avec l'application.
+- Mention « projet indépendant, non affilié à Hisense » dans l'installeur et dans « TV et réglages », avec le numéro de version.
+
 ## 1.0.0.2
 
 ### Partager vers la TV (nouveau)

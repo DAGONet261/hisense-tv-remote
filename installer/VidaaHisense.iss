@@ -74,6 +74,10 @@ RestartApplications=no
 [Languages]
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 
+[Messages]
+; Page d'accueil : avertissement de marque (installeur public).
+french.WelcomeLabel2=Cet assistant va installer [name/ver] sur votre ordinateur.%n%nProjet indépendant, non affilié à Hisense : « Hisense » et « VIDAA » sont des marques de Hisense, utilisées ici seulement pour désigner les téléviseurs compatibles. Logiciel libre sous licence MIT.%n%nIl est recommandé de fermer toutes les autres applications avant de continuer.
+
 [CustomMessages]
 french.LaunchApp=Lancer {#AppName}
 french.FirewallStatus=Autorisation du partage vers la TV dans le pare-feu Windows…

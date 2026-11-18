@@ -23,6 +23,9 @@ public partial class TvWindow : Window
         InitializeComponent();
         _app = app;
         DbPathText.Text = "Base de l'app (TV, jetons chiffrés, réglages, journal) : " + app.Db.Path;
+        var version = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "?";
+        AboutText.Text = $"VIDAA - Hisense {version} — projet indépendant, non affilié à Hisense (« Hisense » et « VIDAA » " +
+                         "sont des marques de Hisense). Licence MIT (fichier LICENSE) ; composants tiers : THIRD-PARTY-NOTICES.md.";
         ShowCertificate();
         app.Remote.PropertyChanged += OnRemoteChanged;
         Closed += (_, _) => app.Remote.PropertyChanged -= OnRemoteChanged;

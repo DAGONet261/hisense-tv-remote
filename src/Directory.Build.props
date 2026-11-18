@@ -22,6 +22,11 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
+  <!-- Licence MIT du projet, livrée à côté de l'exe (avec THIRD-PARTY-NOTICES.md). -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'HisenseTvRemote'">
+    <None Include="$(MSBuildThisFileDirectory)..\LICENSE" Link="LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <!--
     FFmpeg (LGPL) : conversion des vidéos TS, AVI… avant le partage vers la TV. Récupéré par
     build/Get-FFmpeg.ps1 dans third_party/ffmpeg (non versionné), copié dans ffmpeg/ à côté de l'exe.
