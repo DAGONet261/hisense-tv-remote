@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private readonly AppServices _app;
     private TvWindow? _tvWindow;
     private JournalWindow? _journalWindow;
+    private ShareWindow? _shareWindow;
 
     public MainWindow()
     {
@@ -90,6 +91,7 @@ public partial class MainWindow : Window
             case ShortcutCommand.OpenSettings: OnOpenTvWindow(this, e); break;
             case ShortcutCommand.ShowHelp: OnShowShortcuts(this, e); break;
             case ShortcutCommand.OpenMouseMode: OnOpenMouseMode(this, e); break;
+            case ShortcutCommand.OpenShare: OnOpenShare(this, e); break;
             default: await _app.Remote.RunShortcutAsync(shortcut); break;
         }
     }
@@ -139,6 +141,36 @@ public partial class MainWindow : Window
     {
         if (TypingBox.IsKeyboardFocusWithin) EndTyping();
         new MouseModeWindow(_app.Remote, _app.Settings) { Owner = this }.Show();
+    }
+
+    // ---------- Partager vers la TV (DLNA) -----------------------------------------------------
+
+    private void OnOpenShare(object sender, RoutedEventArgs e) => OpenShare(null);
+
+    /// <summary>Ouvre (ou ramène) « Partager vers la TV », en y ajoutant éventuellement des fichiers.</summary>
+    private void OpenShare(string[]? files)
+    {
+        if (TypingBox.IsKeyboardFocusWithin) EndTyping();
+        if (_shareWindow is { IsLoaded: true })
+        {
+            if (files is not null) _shareWindow.AddFiles(files);
+            _shareWindow.Activate();
+            return;
+        }
+        _shareWindow = new ShareWindow(_app, files) { Owner = this };
+        _shareWindow.Show();
+    }
+
+    private void OnDragOverFiles(object sender, DragEventArgs e)
+    {
+        e.Effects = e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    /// <summary>Fichiers glissés sur la télécommande : ouverts dans « Partager vers la TV ».</summary>
+    private void OnDropFiles(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetData(DataFormats.FileDrop) is string[] paths) OpenShare(paths);
     }
 
     private void OnShowShortcuts(object sender, RoutedEventArgs e) =>

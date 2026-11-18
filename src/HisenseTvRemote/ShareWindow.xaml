@@ -1,0 +1,324 @@
+<Window x:Class="HisenseTvRemote.ShareWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+        Title="Partager vers la TV" Height="660" Width="860" MinWidth="660" MinHeight="460"
+        WindowStartupLocation="CenterOwner" Style="{StaticResource DarkWindow}"
+        AllowDrop="True" DragOver="OnDragOver" Drop="OnDrop" PreviewKeyDown="OnPreviewKeyDown"
+        Loaded="OnLoaded" Closed="OnClosed">
+    <Window.Resources>
+        <!-- Barre de progression sombre : partie lue en bleu, curseur rond. -->
+        <Style x:Key="SeekRepeat" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Border Background="Transparent">
+                            <Border Height="5" CornerRadius="2.5" Background="{TemplateBinding Background}" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <!-- Sous la barre : fond gris foncé, partie déjà chargée par la TV en gris clair. -->
+        <Style x:Key="BufferBar" TargetType="ProgressBar">
+            <Setter Property="Height" Value="5"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid>
+                            <Border x:Name="PART_Track" CornerRadius="2.5" Background="{StaticResource SurfaceHoverBrush}"/>
+                            <Border x:Name="PART_Indicator" CornerRadius="2.5" HorizontalAlignment="Left"
+                                    Background="{StaticResource MutedBrush}" Opacity="0.6"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SeekBar" TargetType="Slider">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsMoveToPointEnabled" Value="True"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Track x:Name="PART_Track" Height="22">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource SeekRepeat}" Background="{StaticResource AccentBrush}"/>
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource SeekRepeat}" Background="Transparent"/>
+                            </Track.IncreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Ellipse Width="14" Height="14" Fill="{StaticResource TextBrush}"/>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <DockPanel Margin="14">
+
+        <!-- ===================== En-tête ===================== -->
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button AutomationProperties.Name="Ajouter des fichiers" Style="{StaticResource SmallButton}" Click="OnAddFiles"
+                        ToolTip="Choisir des photos, vidéos ou musiques (vous pouvez aussi les glisser dans cette fenêtre)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE710;" Margin="0,0,6,0"/>
+                        <TextBlock Text="Ajouter des fichiers…"/>
+                    </StackPanel>
+                </Button>
+                <Button AutomationProperties.Name="Ajouter un dossier" Style="{StaticResource SmallButton}" Click="OnAddFolder"
+                        ToolTip="Ajouter toutes les photos, vidéos et musiques d'un dossier">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE8B7;" Margin="0,0,6,0"/>
+                        <TextBlock Text="Ajouter un dossier…"/>
+                    </StackPanel>
+                </Button>
+                <Button AutomationProperties.Name="Retirer de la liste" Style="{StaticResource IconButton}" Content="&#xE711;"
+                        Command="{Binding RemoveSelectedCommand}" ToolTip="Retirer le fichier sélectionné de la liste (Suppr)"/>
+                <Button AutomationProperties.Name="Vider la liste" Style="{StaticResource IconButton}" Content="&#xE74D;"
+                        Command="{Binding ClearCommand}" ToolTip="Vider la liste (les fichiers ne sont pas supprimés)"/>
+            </StackPanel>
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Partager vers la TV" FontSize="18" FontWeight="SemiBold"/>
+                <TextBlock x:Name="TvLabel" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
+            </StackPanel>
+        </DockPanel>
+
+        <!-- ===================== Pare-feu (la TV ne peut pas télécharger) ===================== -->
+        <Border DockPanel.Dock="Top" Margin="0,0,0,12" Padding="12,10" CornerRadius="10"
+                Background="{StaticResource SurfaceBrush}" BorderBrush="{StaticResource DangerBrush}" BorderThickness="1"
+                Visibility="{Binding FirewallSuspected, Converter={StaticResource BoolToVisibility}}">
+            <DockPanel>
+                <Button x:Name="FirewallButton" DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Click="OnAllowFirewall"
+                        AutomationProperties.Name="Autoriser dans le pare-feu" Margin="12,0,0,0" Padding="14,0" Height="36"
+                        ToolTip="Ajoute la règle « VIDAA - Hisense (partage vers la TV) » : réseau privé, sous-réseau local (confirmation administrateur)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE83D;" Margin="0,0,6,0"/>
+                        <TextBlock Text="Autoriser dans le pare-feu"/>
+                    </StackPanel>
+                </Button>
+                <TextBlock TextWrapping="Wrap" VerticalAlignment="Center">
+                    <Run FontWeight="SemiBold" Text="Le pare-feu Windows bloque le partage."/>
+                    <Run Foreground="{StaticResource MutedBrush}" Text="La TV doit pouvoir télécharger les fichiers sur ce PC. Autorisez l'app (réseau privé, appareils du réseau local seulement), puis renvoyez le fichier."/>
+                </TextBlock>
+            </DockPanel>
+        </Border>
+
+        <!-- ===================== Barre d'état ===================== -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="2,10,2,0">
+            <!-- Préparation d'une vidéo (TS, AVI…) : progression réelle ; sinon, simple indicateur d'activité. -->
+            <ProgressBar DockPanel.Dock="Right" Width="140" Height="6" Minimum="0" Maximum="1" Value="{Binding PrepareProgress}"
+                         Visibility="{Binding IsPreparing, Converter={StaticResource BoolToVisibility}}"/>
+            <ProgressBar DockPanel.Dock="Right" Width="90" Height="4" IsIndeterminate="True">
+                <ProgressBar.Style>
+                    <Style TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsBusy}" Value="True"/>
+                                    <Condition Binding="{Binding IsPreparing}" Value="False"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ProgressBar.Style>
+            </ProgressBar>
+            <TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis" FontSize="12">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding LastFailed}" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </DockPanel>
+
+        <!-- ===================== Lecteur ===================== -->
+        <Border DockPanel.Dock="Bottom" Style="{StaticResource Panel}" Margin="0,12,0,0" Padding="12,10">
+          <StackPanel>
+            <!-- Barre de progression (vidéo, musique) : clic ou glissement pour aller à un moment précis. -->
+            <DockPanel Margin="0,0,0,8" Visibility="{Binding IsMedia, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock DockPanel.Dock="Left" Text="{Binding ElapsedText}" MinWidth="52" FontSize="12"
+                           VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
+                <TextBlock DockPanel.Dock="Right" Text="{Binding DurationText}" MinWidth="52" FontSize="12" TextAlignment="Right"
+                           VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
+                <Grid Margin="8,0" Visibility="{Binding CanSeekBar, Converter={StaticResource BoolToVisibility}}">
+                <ProgressBar Style="{StaticResource BufferBar}" Margin="7,0" Minimum="0" Maximum="{Binding DurationSeconds}"
+                             Value="{Binding BufferedSeconds, Mode=OneWay}" ToolTip="Partie déjà chargée par la TV"/>
+                <Slider x:Name="SeekBar" Style="{StaticResource SeekBar}" Minimum="0"
+                        Maximum="{Binding DurationSeconds}" Value="{Binding PositionSeconds}" IsEnabled="{Binding CanSeekBar}"
+                        AutomationProperties.Name="Position dans la vidéo"
+                        ToolTip="Cliquez ou faites glisser pour aller à un moment précis"
+                        LostMouseCapture="OnSeekBarLostCapture"/>
+                </Grid>
+            </DockPanel>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Diaporama -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <CheckBox AutomationProperties.Name="Diaporama" IsChecked="{Binding Slideshow}" VerticalAlignment="Center"
+                              ToolTip="Passer automatiquement à la photo suivante">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Icon}" Text="&#xE786;" Margin="0,0,6,0"/>
+                            <TextBlock Text="Diaporama"/>
+                        </StackPanel>
+                    </CheckBox>
+                    <Button AutomationProperties.Name="Diaporama plus rapide" Style="{StaticResource IconButton}" Content="&#xE738;"
+                            Margin="10,0,0,0" Command="{Binding FasterSlideshowCommand}" ToolTip="Diaporama plus rapide"/>
+                    <TextBlock VerticalAlignment="Center" MinWidth="36" TextAlignment="Center" Margin="4,0"
+                               Text="{Binding SlideshowSeconds, StringFormat={}{0} s}" ToolTip="Durée d'affichage de chaque photo"/>
+                    <Button AutomationProperties.Name="Diaporama plus lent" Style="{StaticResource IconButton}" Content="&#xE710;"
+                            Command="{Binding SlowerSlideshowCommand}" ToolTip="Diaporama plus lent"/>
+                </StackPanel>
+
+                <!-- Commandes -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Button AutomationProperties.Name="Précédent" Style="{StaticResource IconButton}" Content="&#xE892;"
+                            Command="{Binding PreviousCommand}" ToolTip="Fichier précédent (←)"/>
+                    <Button AutomationProperties.Name="Reculer de 30 secondes" Style="{StaticResource SmallButton}" Content="−30 s"
+                            Visibility="{Binding IsMedia, Converter={StaticResource BoolToVisibility}}"
+                            Command="{Binding SeekByCommand}" ToolTip="Reculer de 30 secondes (Maj + ←)">
+                        <Button.CommandParameter><sys:Int32>-30</sys:Int32></Button.CommandParameter>
+                    </Button>
+                    <Button AutomationProperties.Name="Reculer de 10 secondes" Style="{StaticResource SmallButton}" Content="−10 s"
+                            Visibility="{Binding IsMedia, Converter={StaticResource BoolToVisibility}}"
+                            Command="{Binding SeekByCommand}" ToolTip="Reculer de 10 secondes (Ctrl + ←)">
+                        <Button.CommandParameter><sys:Int32>-10</sys:Int32></Button.CommandParameter>
+                    </Button>
+                    <Button AutomationProperties.Name="Lecture ou pause" Command="{Binding PlayPauseCommand}"
+                            Visibility="{Binding IsMedia, Converter={StaticResource BoolToVisibility}}" ToolTip="Lecture / pause (Espace)">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource IconButton}">
+                                <Setter Property="Content" Value="&#xE768;"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsPlaying}" Value="True">
+                                        <Setter Property="Content" Value="&#xE769;"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button AutomationProperties.Name="Arrêter" Style="{StaticResource IconButton}" Content="&#xE71A;"
+                            Command="{Binding StopCommand}" ToolTip="Arrêter l'affichage / la lecture sur la TV, ou annuler la préparation d'une vidéo"/>
+                    <Button AutomationProperties.Name="Avancer de 10 secondes" Style="{StaticResource SmallButton}" Content="+10 s"
+                            Visibility="{Binding IsMedia, Converter={StaticResource BoolToVisibility}}"
+                            Command="{Binding SeekByCommand}" ToolTip="Avancer de 10 secondes (Ctrl + →)">
+                        <Button.CommandParameter><sys:Int32>10</sys:Int32></Button.CommandParameter>
+                    </Button>
+                    <Button AutomationProperties.Name="Avancer de 30 secondes" Style="{StaticResource SmallButton}" Content="+30 s"
+                            Visibility="{Binding IsMedia, Converter={StaticResource BoolToVisibility}}"
+                            Command="{Binding SeekByCommand}" ToolTip="Avancer de 30 secondes (Maj + →)">
+                        <Button.CommandParameter><sys:Int32>30</sys:Int32></Button.CommandParameter>
+                    </Button>
+                    <Button AutomationProperties.Name="Suivant" Style="{StaticResource IconButton}" Content="&#xE893;"
+                            Command="{Binding NextCommand}" ToolTip="Fichier suivant (→)"/>
+                </StackPanel>
+
+                <!-- En cours -->
+                <StackPanel Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Current.Name}" TextTrimming="CharacterEllipsis" HorizontalAlignment="Right" MaxWidth="220"/>
+                    <TextBlock Text="{Binding PositionText}" Foreground="{StaticResource MutedBrush}" FontSize="12" HorizontalAlignment="Right"/>
+                </StackPanel>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- ===================== Liste ===================== -->
+        <Grid>
+            <ListView x:Name="List" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
+                      MouseDoubleClick="OnListDoubleClick" AutomationProperties.Name="Fichiers à partager"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Margin="2,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="34"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" FontSize="18" VerticalAlignment="Center"/>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Foreground="{StaticResource MutedBrush}" FontSize="11" TextTrimming="CharacterEllipsis">
+                                    <Run Text="{Binding KindLabel, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding SizeText, Mode=OneWay}"/><Run Text=" · "/><Run Text="{Binding Path, Mode=OneWay}"/>
+                                </TextBlock>
+                                <!-- Vidéos TS, AVI… : état de la préparation pour la TV (commencée dès l'ajout). -->
+                                <TextBlock Text="{Binding PrepareText}" FontSize="11" Margin="0,1,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding PrepareText}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding PrepareState}" Value="Ready">
+                                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding PrepareState}" Value="Failed">
+                                                    <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                            <TextBlock Grid.Column="2" Text="Sur la TV" Foreground="{StaticResource AccentBrush}" FontSize="11"
+                                       VerticalAlignment="Center" Margin="8,0,4,0"
+                                       Visibility="{Binding IsCurrent, Converter={StaticResource BoolToVisibility}}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasItems}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock Style="{StaticResource Icon}" Text="&#xE898;" FontSize="40" HorizontalAlignment="Center"
+                           Foreground="{StaticResource MutedBrush}"/>
+                <TextBlock Text="Glissez ici des photos, vidéos ou musiques" FontSize="15" Margin="0,10,0,4" HorizontalAlignment="Center"/>
+                <TextBlock Text="ou utilisez « Ajouter des fichiers… ». Double-clic ou Entrée : envoyer à la TV."
+                           Foreground="{StaticResource MutedBrush}" FontSize="12" HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+    </DockPanel>
+</Window>

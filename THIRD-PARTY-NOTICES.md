@@ -43,9 +43,23 @@ Bibliothèque client MQTT utilisée par le moteur natif.
 Licence MIT — Copyright (c) .NET Foundation and Contributors.
 https://github.com/dotnet/MQTTnet
 
+## FFmpeg 9.0.2 — outil livré avec l'application
+
+Conversion des vidéos TS, MKV, AVI… en MP4 avant le partage vers la TV
+(dossier `ffmpeg/` à côté de l'exe : `ffmpeg.exe`, `ffprobe.exe` et leurs
+bibliothèques, utilisés comme programmes séparés, non modifiés).
+Version n9.0.2-57-gd838f9f9ae, build « win64 LGPL shared » de BtbN
+(autobuild-2026-11-17-12-40).
+Licence **GNU LGPL v3** — texte complet dans `ffmpeg/LICENSE.txt`.
+Copyright (c) 2000-2026 the FFmpeg developers. https://ffmpeg.org
+Sources correspondantes : https://github.com/FFmpeg/FFmpeg/commit/d838f9f9ae
+(scripts de construction : https://github.com/BtbN/FFmpeg-Builds).
+Les bibliothèques sont des DLL remplaçables par l'utilisateur.
+
 ## Certificat client VIDAA — non distribué
 
 Le certificat client (`vidaa_client.pem`/`.key`) extrait de l'application
 officielle VIDAA appartient à son propriétaire et n'est **pas** livré avec
 cette application. Chaque poste doit fournir le sien
-(`%USERPROFILE%\.config\pyvidaa\certs\`).
+(import au premier lancement : « TV et réglages » → « Importer le certificat
+(.p12) », rangé dans `%APPDATA%\HisenseTvRemote\certs\`).

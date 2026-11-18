@@ -6,7 +6,8 @@
         xmlns:vm="clr-namespace:HisenseTvRemote.Core.ViewModels;assembly=HisenseTvRemote.Core"
         mc:Ignorable="d" d:DataContext="{d:DesignInstance Type=vm:RemoteViewModel}"
         Title="VIDAA - Hisense" Height="840" Width="1020" MinWidth="760" MinHeight="640"
-        Style="{StaticResource DarkWindow}" PreviewMouseWheel="OnWindowWheel">
+        Style="{StaticResource DarkWindow}" PreviewMouseWheel="OnWindowWheel"
+        AllowDrop="True" DragOver="OnDragOverFiles" Drop="OnDropFiles">
     <Window.Resources>
         <!-- Libellé français sous chaque bouton de la télécommande. -->
         <Style x:Key="Caption" TargetType="TextBlock">
@@ -33,6 +34,13 @@
         <!-- ===================== En-tête ===================== -->
         <DockPanel Margin="0,0,0,14">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button AutomationProperties.Name="Partager vers la TV" Style="{StaticResource SmallButton}" Click="OnOpenShare"
+                        ToolTip="Afficher des photos, vidéos ou musiques du PC sur la TV (Ctrl + P ; ou glissez des fichiers sur cette fenêtre)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE72D;" Margin="0,0,6,0"/>
+                        <TextBlock Text="Partager"/>
+                    </StackPanel>
+                </Button>
                 <Button AutomationProperties.Name="Mode souris" Style="{StaticResource SmallButton}" Click="OnOpenMouseMode"
                         ToolTip="Piloter la TV avec la souris, en plein écran (F11 ; Échap pour sortir)">
                     <StackPanel Orientation="Horizontal">

@@ -21,4 +21,13 @@
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
+
+  <!--
+    FFmpeg (LGPL) : conversion des vidéos TS, AVI… avant le partage vers la TV. Récupéré par
+    build/Get-FFmpeg.ps1 dans third_party/ffmpeg (non versionné), copié dans ffmpeg/ à côté de l'exe.
+  -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'HisenseTvRemote' And Exists('$(MSBuildThisFileDirectory)..\third_party\ffmpeg\ffmpeg.exe')">
+    <None Include="$(MSBuildThisFileDirectory)..\third_party\ffmpeg\*" Link="ffmpeg\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
 </Project>
