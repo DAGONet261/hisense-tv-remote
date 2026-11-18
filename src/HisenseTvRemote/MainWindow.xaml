@@ -34,6 +34,13 @@
         <!-- ===================== En-tête ===================== -->
         <DockPanel Margin="0,0,0,14">
             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button AutomationProperties.Name="Envoyer un lien YouTube" Style="{StaticResource SmallButton}" Click="OnOpenYouTube"
+                        ToolTip="Lire une vidéo YouTube sur la TV à partir de son lien, comme le bouton « caster » du téléphone (Ctrl + Y)">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE714;" Margin="0,0,6,0"/>
+                        <TextBlock Text="YouTube"/>
+                    </StackPanel>
+                </Button>
                 <Button AutomationProperties.Name="Partager vers la TV" Style="{StaticResource SmallButton}" Click="OnOpenShare"
                         ToolTip="Afficher des photos, vidéos ou musiques du PC sur la TV (Ctrl + P ; ou glissez des fichiers sur cette fenêtre)">
                     <StackPanel Orientation="Horizontal">

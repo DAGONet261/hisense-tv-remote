@@ -57,3 +57,10 @@
   `SetAVTransportURI` (avec métadonnées DIDL-Lite) + `Play`. La TV vient
   chercher le fichier ~15 s après (ouverture de son lecteur). Il faut
   autoriser le port du PC dans le pare-feu Windows (réseau privé).
+
+## DIAL (« caster » YouTube) — vérifié le 18/11
+
+- SSDP `urn:dial-multiscreen-org:service:dial:1`, `http://<tv>:3366/dd.xml`,
+  applications sur `http://<tv>:3367/apps/` : YouTube (avec l'en-tête
+  `Origin: package:com.google.android.youtube`), Netflix, AmazonInstantVideo.
+- Lecture d'une vidéo YouTube précise : voir `youtube-dial.md`.

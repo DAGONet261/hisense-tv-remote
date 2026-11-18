@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private TvWindow? _tvWindow;
     private JournalWindow? _journalWindow;
     private ShareWindow? _shareWindow;
+    private YouTubeWindow? _youTubeWindow;
 
     public MainWindow()
     {
@@ -92,6 +93,7 @@ public partial class MainWindow : Window
             case ShortcutCommand.ShowHelp: OnShowShortcuts(this, e); break;
             case ShortcutCommand.OpenMouseMode: OnOpenMouseMode(this, e); break;
             case ShortcutCommand.OpenShare: OnOpenShare(this, e); break;
+            case ShortcutCommand.OpenYouTube: OnOpenYouTube(this, e); break;
             default: await _app.Remote.RunShortcutAsync(shortcut); break;
         }
     }
@@ -146,6 +148,15 @@ public partial class MainWindow : Window
     // ---------- Partager vers la TV (DLNA) -----------------------------------------------------
 
     private void OnOpenShare(object sender, RoutedEventArgs e) => OpenShare(null);
+
+    /// <summary>« Envoyer un lien YouTube » (une seule fenêtre ; ramenée devant si déjà ouverte).</summary>
+    private void OnOpenYouTube(object sender, RoutedEventArgs e)
+    {
+        if (TypingBox.IsKeyboardFocusWithin) EndTyping();
+        if (_youTubeWindow is { IsLoaded: true }) { _youTubeWindow.Activate(); return; }
+        _youTubeWindow = new YouTubeWindow(_app) { Owner = this };
+        _youTubeWindow.Show();
+    }
 
     /// <summary>Ouvre (ou ramène) « Partager vers la TV », en y ajoutant éventuellement des fichiers.</summary>
     private void OpenShare(string[]? files)

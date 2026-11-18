@@ -26,6 +26,8 @@ public enum ShortcutCommand
     OpenMouseMode,
     /// <summary>Ouvre « Partager vers la TV » (photos, vidéos, musique en DLNA).</summary>
     OpenShare,
+    /// <summary>Ouvre « Envoyer un lien YouTube » (lecture sur la TV, comme le bouton « caster »).</summary>
+    OpenYouTube,
     ShowHelp,
 }
 
@@ -111,6 +113,7 @@ public static class KeyboardShortcuts
         C("Ctrl + T", "Ouvrir TV et réglages", "Application", ShortcutCommand.OpenSettings, KeyMods.Ctrl, "T"),
         C("F11", "Mode souris (plein écran)", "Application", ShortcutCommand.OpenMouseMode, KeyMods.None, "F11"),
         C("Ctrl + P", "Partager photos, vidéos, musique vers la TV", "Application", ShortcutCommand.OpenShare, KeyMods.Ctrl, "P"),
+        C("Ctrl + Y", "Envoyer un lien YouTube à la TV", "Application", ShortcutCommand.OpenYouTube, KeyMods.Ctrl, "Y"),
         C("F1", "Aide des raccourcis", "Application", ShortcutCommand.ShowHelp, KeyMods.None, "F1"),
     ];
 
