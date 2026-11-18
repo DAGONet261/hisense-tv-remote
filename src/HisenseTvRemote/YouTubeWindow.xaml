@@ -1,7 +1,7 @@
 <Window x:Class="HisenseTvRemote.YouTubeWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Envoyer un lien YouTube" Height="250" Width="620" MinWidth="460" MinHeight="230"
+        Title="Envoyer un lien YouTube" Height="265" Width="620" MinWidth="460" MinHeight="230"
         WindowStartupLocation="CenterOwner" Style="{StaticResource DarkWindow}" ResizeMode="CanResizeWithGrip"
         Loaded="OnLoaded" PreviewKeyDown="OnPreviewKeyDown">
     <DockPanel Margin="16">
