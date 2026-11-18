@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| _(aucune session en cours)_ | | | | |
+| Release GitHub automatique | `release-github` | `build/Publish-GitHubRelease.ps1` (nouveau), `build/Publish-Release.ps1`, `src/Directory.Build.targets`, `contexte/publication.md` | 2026-11-18 | Claude (session principale) |
