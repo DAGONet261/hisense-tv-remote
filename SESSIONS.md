@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| _(aucune session en cours)_ | | | | |
+| Partager vers la TV (DLNA) | `partage-dlna` | `src/HisenseTvRemote.Core/Dlna/` (nouveau), `src/HisenseTvRemote.Core/ViewModels/ShareViewModel.cs` (nouveau), `src/HisenseTvRemote.Core/TvController.cs`, `src/HisenseTvRemote.Core/KeyboardShortcuts.cs`, `src/HisenseTvRemote/ShareWindow.xaml(.cs)` (nouveau), `src/HisenseTvRemote/PhotoPreparer.cs` (nouveau), `src/HisenseTvRemote/MainWindow.xaml(.cs)`, `src/HisenseTvRemote.Tests/DlnaTests.cs` (nouveau), `installer/VidaaHisense.iss`, `contexte/partage-dlna.md` (nouveau) | 2026-11-18 | Claude (session principale) |
