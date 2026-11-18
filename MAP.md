@@ -14,6 +14,7 @@ chercher ailleurs.
 | `SPEC.md` | Ce qu'on veut obtenir : objectif, architecture, fonctionnalités de l'app WPF. | Exigences fonctionnelles, périmètre |
 | `PLAN.md` | Les étapes de réalisation, à cocher. | Avancement, prochaines étapes |
 | `MAP.md` | Ce fichier. | — |
+| `CHANGELOG.md` | Nouveautés de chaque version, en français, pour les utilisateurs ; la section de la version est reprise en tête de la Release GitHub. | Avant chaque Release : section `## <version à venir>` |
 | `README.md` | Présentation rapide du dossier. | — |
 | `THIRD-PARTY-NOTICES.md` | Licences tierces (pyvidaa porté en C#, MQTTnet) ; certificat VIDAA non distribué. Copié à côté de l'exe. | Toute nouvelle dépendance ou code repris |
 | `.gitignore` | Exclusions Git : secrets (`.env`), certificats et clés, APK VIDAA (`sources/`), base, journaux, notes locales. | Nouvelle exclusion si un outil ajoute des fichiers à ignorer |

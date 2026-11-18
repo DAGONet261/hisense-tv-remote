@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| Notes de version (CHANGELOG) | `changelog` | `CHANGELOG.md` (nouveau), `build/New-ReleaseNotes.ps1`, `contexte/publication.md` | 2026-11-18 | Claude (session principale) |
+| _(aucune session en cours)_ | | | | |
