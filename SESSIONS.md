@@ -11,4 +11,4 @@ les modifie qu'au moment de fusionner.
 
 | Sujet | Branche | Zone réservée (fichiers / dossiers) | Depuis | Par |
 |---|---|---|---|---|
-| _(aucune session en cours)_ | | | | |
+| Dépôt public : licence et README | `public` | `LICENSE` (nouveau), `README.md` | 2026-11-18 | Claude (session principale) |
