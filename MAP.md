@@ -18,7 +18,8 @@ chercher ailleurs.
 | `THIRD-PARTY-NOTICES.md` | Licences tierces (pyvidaa porté en C#, MQTTnet) ; certificat VIDAA non distribué. Copié à côté de l'exe. | Toute nouvelle dépendance ou code repris |
 | `.gitignore` | Exclusions Git : secrets (`.env`), certificats et clés, APK VIDAA (`sources/`), base, journaux, notes locales. | Nouvelle exclusion si un outil ajoute des fichiers à ignorer |
 | `version.txt` | Version de la dernière Release (une compilation Release l'incrémente). Voir `contexte/publication.md`. | — |
-| `build/` | Scripts : `Publish-Release.ps1` (Release + installeur en ligne de commande), `Push-ReleaseTag.ps1` (commit de `version.txt`, tag `v<version>` et push : déclenche le workflow, appelé automatiquement), `New-ReleaseNotes.ps1` (notes en français d'une Release), `New-AppIcon.ps1` (icône et images de l'installeur). | Nouveau script de construction/publication |
+| `build/` | Scripts : `Publish-Release.ps1` (Release + installeur en ligne de commande), `Push-ReleaseTag.ps1` (commit de `version.txt`, tag `v<version>` et push : déclenche le workflow, appelé automatiquement), `New-ReleaseNotes.ps1` (notes en français d'une Release), `New-AppIcon.ps1` (icône et images de l'installeur), `Get-FFmpeg.ps1` (FFmpeg LGPL figé, empreinte vérifiée, dans `third_party/ffmpeg`). | Nouveau script de construction/publication |
+| `third_party/` | *Généré, non versionné* : `ffmpeg/` (FFmpeg 9.0.2 LGPL, récupéré par `build/Get-FFmpeg.ps1`, copié à côté de l'exe). | — |
 | `installer/` | Installeur Inno Setup 7 : `VidaaHisense.iss` (**UTF-8 avec BOM**), `images/` de l'assistant. | Tout ce qui concerne l'installeur |
 | `.github/workflows/release.yml` | Workflow GitHub Actions : sur un tag `v*`, compile, teste, crée l'installeur et publie la Release (essai manuel possible). Voir `contexte/publication.md`. | Toute automatisation GitHub |
 | `dist/` | *Généré, non versionné* : `publish/` (app autonome) et `VIDAA-Hisense-Setup-<version>.exe`. | — |
@@ -54,12 +55,16 @@ chercher ailleurs.
 | `HisenseTvRemote/JournalWindow.xaml(.cs)` | Fenêtre « Journal » : historique des commandes (conservé en base). |
 | `HisenseTvRemote/PairingDialog.xaml(.cs)`, `LogEntry.cs` | Dialogue de PIN ; ligne du journal. |
 | `HisenseTvRemote/ShortcutsWindow.xaml(.cs)` | Aide des raccourcis (F1), générée depuis la table. |
+| `HisenseTvRemote.Core/Dlna/` | Partage vers la TV (DLNA) : `MediaTypes.cs` (formats, plages d'octets), `MediaHttpServer.cs` (serveur HTTP local, TV seule autorisée), `MediaContent.cs` (contenu servi, octets ↔ temps, partie chargée), `DlnaRenderer.cs` (lecteur DLNA de la TV : découverte, envoi, lecture, sauts), `DlnaPlayer.cs`, `Mp4Interleaver.cs` (MP4 réorganisés à la volée), `VideoRemuxer.cs` (TS/AVI → MP4 avec FFmpeg). |
+| `HisenseTvRemote.Core/ViewModels/ShareViewModel.cs` | Écran « Partager vers la TV » : liste, préparation en arrière-plan, diaporama, lecture, barre de progression. |
+| `HisenseTvRemote/ShareWindow.xaml(.cs)` | Fenêtre « Partager vers la TV » (bouton Partager, Ctrl + P, glisser-déposer). |
+| `HisenseTvRemote/PhotoPreparer.cs`, `MediaDuration.cs`, `FirewallHelper.cs`, `FfmpegLocator.cs` | Partage : photos (HEIC, orientation, 4K), durée des vidéos (Windows), règle de pare-feu, emplacement de FFmpeg. |
 | `HisenseTvRemote/MouseModeWindow.xaml(.cs)` | Mode souris plein écran (F11) : la souris du PC pilote la TV. |
 | `HisenseTvRemote/AppServices.cs` | Services partagés par les fenêtres (base, réglages, contrôleur, ViewModel, journal). |
 | `Directory.Build.props`, `Directory.Build.targets` | Identité de l'exe (nom, éditeur, icône) ; version lue/incrémentée depuis `version.txt` ; en Release : publication et installeur. |
 | `HisenseTvRemote/Resources/VidaaHisense.ico` | Icône de l'application (VIDAA officielle, 16 à 256 px), générée par `build/New-AppIcon.ps1`. |
 | `HisenseTvRemote/Resources/Theme.xaml` | Thème sombre : couleurs, styles de boutons, champs, listes, barres de défilement. |
-| `HisenseTvRemote.Tests/` | Tests xUnit sans TV ni réseau : `FakeEngine.cs` (faux moteur en mémoire), `CoreTests.cs` (contrôleur, touches, certificat), `VidaaNativeTests.cs` (identifiants, découverte, commandes), `StorageTests.cs` (base), `ViewModelTests.cs` (écran principal), `ShortcutTests.cs` (raccourcis, sources). `dotnet test src/HisenseTvRemote.Tests`. |
+| `HisenseTvRemote.Tests/` | Tests xUnit sans TV ni réseau : `FakeEngine.cs` (faux moteur en mémoire), `CoreTests.cs` (contrôleur, touches, certificat), `VidaaNativeTests.cs` (identifiants, découverte, commandes), `StorageTests.cs` (base), `ViewModelTests.cs` (écran principal), `ShortcutTests.cs` (raccourcis, sources), `DlnaTests.cs` (partage : formats, serveur, écran, préparation), `Mp4InterleaverTests.cs` (MP4 réorganisés). `dotnet test src/HisenseTvRemote.Tests`. |
 
 ## `contexte/` — ce qu'on apprend, une note par sujet
 
@@ -74,6 +79,7 @@ chercher ailleurs.
 | `interface.md` | Refonte de l'interface : organisation, règles de nommage des boutons, logos fournis par la TV, architecture MVVM. |
 | `base-sqlite.md` | Base SQLite portable : emplacement, tables, chiffrement DPAPI des jetons, import, repli. |
 | `portage-natif-csharp.md` | Moteur natif C# : correspondance avec pyvidaa, mesures, améliorations, points d'attention. |
+| `partage-dlna.md` | Partager vers la TV : principe DLNA, MP4 réorganisés (mesures), conversion FFmpeg, préparation en arrière-plan, pare-feu, photos. |
 | `capacites-tv.md` | Ce que la TV déclare savoir faire (pas de capture d'écran, pilotage souris…), modèle exact, deux cartes réseau, touches de lecture vérifiées (Rembobiner = `KEY_BACKS`), lecteur DLNA (partage de photos/vidéos). |
 | `pont-python-persistant.md` | *Historique* : lenteur de `tv.exe` et pont Python persistant (retirés le 17/11). |
 | `pyvidaa-comportement-reel.md` | *Historique* : ce que faisait vraiment `tv.exe` sur la 55A53FXVT : fichiers dans le répertoire courant, bugs de pyvidaa 2.3.0, sorties réelles, collision MQTT, changement d'IP. |

@@ -52,6 +52,9 @@ TestResults/
 # Version publiée et installeur (générés par une compilation Release)
 dist/
 
+# Outils tiers récupérés par build/Get-FFmpeg.ps1 (FFmpeg LGPL, ~150 Mo)
+third_party/
+
 # Outils annexes éventuels
 __pycache__/
 *.pyc

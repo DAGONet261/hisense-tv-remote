@@ -65,10 +65,15 @@ l'avancement (par toi, ou par Claude Code dans Visual Studio).
       l'installeur. Voir `contexte/publication.md`
 - [x] **Rembobiner** (17/11) : `KEY_BACKS` (vérifié devant la TV, lecteur USB et
       YouTube) ; `KEY_BACK` de pyvidaa ne fait rien
-- [ ] **Partager vers la TV (DLNA)** : photos, vidéos, musique du PC vers la
-      TV (lecteur DLNA vérifié le 17/11, photo affichée) ; serveur HTTP local,
-      règle de pare-feu, conversion HEIC, recul/avance par position. Voir
-      `contexte/capacites-tv.md`
+- [x] **Partager vers la TV (DLNA)** (18/11) : photos (HEIC, orientation,
+      diaporama), vidéos et musique du PC ; barre de progression (clic,
+      glissement, partie chargée) ; MP4 réorganisés à la volée (lecture
+      fluide) ; TS/AVI convertis en MP4 par FFmpeg (préparés dès l'ajout) ;
+      MKV refusés (choix de l'utilisateur) ; pare-feu détecté et autorisé en un
+      clic. Voir `contexte/partage-dlna.md`
+- [ ] Partage : vérifier AVI/WMV/FLV sur la TV (pas encore de fichier d'essai)
+- [ ] Partage : réencodage en direct pour les codecs d'image non lus par la TV
+      (encodeurs H.264 matériels déjà présents dans FFmpeg)
 - [ ] Signature de code de l'exe et de l'installeur (évite l'avertissement
       SmartScreen) — nécessite un certificat de signature
 - [x] **Sources TV et HDMI** (17/11) : corrigé (identifiants textuels « HDMI1 »…
